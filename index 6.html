@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Betting Edge Tracker - Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="max-w-7xl mx-auto p-6">
+        <!-- Login Screen -->
+        <div id="login-screen" class="">
+            <div class="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto mt-20 text-center">
+                <h1 class="text-3xl font-bold text-gray-800 mb-4">NBA Betting Edge Tracker</h1>
+                <p class="text-gray-600 mb-6">Sign in to access shared betting data and analytics</p>
+                <button onclick="signInWithGoogle()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="white" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Sign in with Google
+                </button>
+                <p class="text-xs text-gray-500 mt-4">Your data will be securely stored and shared with your group</p>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div id="main-app" class="hidden">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">NBA Betting Edge Tracker</h1>
+                        <p class="text-sm text-gray-600" id="user-email"></p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="showAnalytics()" class="bg-purple-600 text-white px-4 py-2 rounded font-semibold hover:bg-purple-700 text-sm">
+                            📊 Analytics
+                        </button>
+                        <button onclick="exportData()" class="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700 text-sm">
+                            💾 Export
+                        </button>
+                        <button onclick="signOut()" class="text-red-600 hover:text-red-800 font-semibold text-sm">
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Dashboard -->
+            <div id="performance-dashboard"></div>
+
+            <!-- Import Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-bold mb-4">Quick Import from SBD</h2>
+                <p class="text-sm text-gray-600 mb-3">Copy the SPREAD table from SBD, then MONEYLINE table:</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Paste SPREAD Data</label>
+                        <textarea id="spread-paste" rows="10" placeholder="Paste spread table..." 
+                            class="w-full px-3 py-2 border rounded font-mono text-xs"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Paste MONEYLINE Data</label>
+                        <textarea id="ml-paste" rows="10" placeholder="Paste moneyline table..." 
+                            class="w-full px-3 py-2 border rounded font-mono text-xs"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mb-2">
+                    <input type="date" id="bulk-date" class="px-3 py-2 border rounded">
+                    <button onclick="importFromSBD()" class="flex-1 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700">
+                        Import from SBD
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500">Data will be saved to cloud and shared with your group</p>
+            </div>
+
+            <!-- Games List -->
+            <div id="games-list"></div>
+
+            <!-- Result Modal -->
+            <div id="result-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 class="text-xl font-bold mb-4">Enter Final Score</h3>
+                    <p id="modal-matchup" class="text-gray-600 mb-4"></p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-semibold mb-1" id="team-label"></label>
+                            <input type="number" id="team-score" class="w-full px-3 py-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1" id="opp-label"></label>
+                            <input type="number" id="opp-score" class="w-full px-3 py-2 border rounded">
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="saveResult()" class="flex-1 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700">
+                                Save
+                            </button>
+                            <button onclick="closeModal()" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded font-semibold hover:bg-gray-400">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Modal -->
+            <div id="analytics-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+                <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 my-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold">System Analytics</h3>
+                        <button onclick="closeAnalytics()" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+                    </div>
+                    <div id="analytics-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8EmsdGFvQLRRWev3zM8wzSXXhgWjHeO4",
+            authDomain: "nba-tracker-641f0.firebaseapp.com",
+            databaseURL: "https://nba-tracker-641f0-default-rtdb.firebaseio.com",
+            projectId: "nba-tracker-641f0",
+            storageBucket: "nba-tracker-641f0.firebasestorage.app",
+            messagingSenderId: "29717054876",
+            appId: "1:29717054876:web:fc4bf3d1242967fe857459"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        let currentUser = null;
+        let games = [];
+        let currentGameId = null;
+        const THRESHOLD = 20;
+
+        // Handle redirect result (for mobile Safari)
+        auth.getRedirectResult().then(result => {
+            if (result.user) {
+                console.log('Signed in via redirect:', result.user.email);
+            }
+        }).catch(error => {
+            console.error('Redirect error:', error);
+        });
+
+        // Auth State Observer
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('user-email').textContent = user.email;
+                loadGamesFromFirebase();
+            } else {
+                currentUser = null;
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('main-app').classList.add('hidden');
+            }
+        });
+
+        // Sign in with Google
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithRedirect(provider);
+        }
+
+        // Sign out
+        function signOut() {
+            auth.signOut();
+        }
+
+        // Load games from Firebase
+        function loadGamesFromFirebase() {
+            database.ref('games').on('value', snapshot => {
+                games = [];
+                snapshot.forEach(child => {
+                    games.push({
+                        firebaseKey: child.key,
+                        ...child.val()
+                    });
+                });
+                render();
+            });
+        }
+
+        // Save game to Firebase
+        function saveGameToFirebase(game) {
+            const gameData = {...game};
+            delete gameData.firebaseKey;
+            
+            if (game.firebaseKey) {
+                return database.ref('games/' + game.firebaseKey).update(gameData);
+            } else {
+                return database.ref('games').push(gameData);
+            }
+        }
+
+        // Delete game from Firebase
+        function deleteGameFromFirebase(firebaseKey) {
+            return database.ref('games/' + firebaseKey).remove();
+        }
+
+        // Calculate spread-implied ML probability
+        function calculateMLBaseline(spread) {
+            const points = parseFloat(spread);
+            let prob = 50 + (points * -2.8);
+            return Math.max(5, Math.min(95, prob));
+        }
+
+        // Calculate fit score
+        function calculateFitScore(game) {
+            const spreadBaseline = 50;
+            const mlBaseline = calculateMLBaseline(game.spread);
+            
+            const spreadGap = spreadBaseline - game.spreadMoneyPct;
+            const mlGap = mlBaseline - game.mlMoneyPct;
+            
+            const weightedScore = (spreadGap * 0.75) + (mlGap * 0.25);
+            const baseScore = Math.max(0, weightedScore * 1.5);
+            
+            const bothPositive = spreadGap > 0 && mlGap > 0;
+            const alignmentBonus = bothPositive ? 10 : 0;
+            
+            return {
+                score: Math.round((baseScore + alignmentBonus) * 10) / 10,
+                spreadBaseline,
+                mlBaseline: Math.round(mlBaseline * 10) / 10,
+                spreadGap: Math.round(spreadGap * 10) / 10,
+                mlGap: Math.round(mlGap * 10) / 10,
+                bothPositive,
+                recommendation: mlGap > 10 || spreadGap > 10 ? 'BOTH' : 
+                               spreadGap > mlGap ? 'SPREAD' : 'ML'
+            };
+        }
+
+        // Parse SBD table format - FIXED FOR iOS FORMAT WITH TEAM NAMES
+        function parseSBDTable(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            const games = [];
+            
+            let i = 0;
+            while (i < lines.length) {
+                const line = lines[i];
+                
+                // Look for lines ending with "logoTEAM" (e.g., "San Antonio Spurs logoSAS")
+                const teamMatch = line.match(/logo([A-Z]{2,4})$/);
+                
+                if (teamMatch) {
+                    const team = teamMatch[1]; // Extract just "SAS" from "logoSAS"
+                    i++;
+                    
+                    // Skip betting site logo lines (Betway logo, Bet365 logo, etc.)
+                    while (i < lines.length && 
+                           (lines[i].includes('Betway') || 
+                            lines[i].includes('Bet365') || 
+                            lines[i].includes('FanDuel') ||
+                            lines[i].toLowerCase().includes('logo'))) {
+                        i++;
+                    }
+                    
+                    if (i >= lines.length) break;
+                    
+                    // Next line should be the number (spread/ML)
+                    let lineValue = lines[i];
+                    lineValue = lineValue.replace('−', '-').replace('+', '');
+                    const parsedLine = parseFloat(lineValue);
+                    
+                    if (isNaN(parsedLine)) {
+                        i++;
+                        continue;
+                    }
+                    i++;
+                    
+                    // Next is BET%
+                    if (i >= lines.length) break;
+                    i++;
+                    
+                    // Next is $% - this is what we want
+                    if (i >= lines.length) break;
+                    const moneyPct = parseFloat(lines[i].replace('%', ''));
+                    
+                    if (isNaN(moneyPct)) {
+                        i++;
+                        continue;
+                    }
+                    
+                    // Find opponent
+                    let opponent = 'Unknown';
+                    for (let j = i + 1; j < Math.min(i + 30, lines.length); j++) {
+                        const oppMatch = lines[j].match(/logo([A-Z]{2,4})$/);
+                        if (oppMatch && oppMatch[1] !== team) {
+                            opponent = oppMatch[1];
+                            break;
+                        }
+                    }
+                    
+                    games.push({
+                        team,
+                        opponent,
+                        line: parsedLine,
+                        moneyPct
+                    });
+                }
+                
+                i++;
+            }
+            
+            return games;
+        }
+
+        // Import from SBD
+        function importFromSBD() {
+            const spreadText = document.getElementById('spread-paste').value.trim();
+            const mlText = document.getElementById('ml-paste').value.trim();
+            const gameDate = document.getElementById('bulk-date').value;
+
+            if (!spreadText || !mlText) {
+                alert('Please paste both spread and moneyline data');
+                return;
+            }
+
+            try {
+                const spreadData = parseSBDTable(spreadText);
+                const mlData = parseSBDTable(mlText);
+
+                console.log('Parsed spread:', spreadData);
+                console.log('Parsed ML:', mlData);
+
+                if (spreadData.length === 0 || mlData.length === 0) {
+                    alert(`Parsing failed:\nSpread: ${spreadData.length} games\nML: ${mlData.length} games`);
+                    return;
+                }
+
+                if (spreadData.length !== mlData.length) {
+                    alert(`Mismatch: ${spreadData.length} spread vs ${mlData.length} ML`);
+                }
+
+                let imported = 0;
+                const promises = [];
+                
+                for (let i = 0; i < spreadData.length; i++) {
+                    const spread = spreadData[i];
+                    const ml = mlData[i];
+
+                    if (spread.team !== ml.team) {
+                        console.warn(`Team mismatch at row ${i}: ${spread.team} vs ${ml.team}`);
+                        continue;
+                    }
+
+                    const game = {
+                        id: Date.now() + i,
+                        team: spread.team,
+                        opponent: spread.opponent,
+                        spread: spread.line,
+                        moneyline: ml.line,
+                        spreadMoneyPct: spread.moneyPct,
+                        mlMoneyPct: ml.moneyPct,
+                        date: gameDate || new Date().toISOString().split('T')[0],
+                        result: null,
+                        addedBy: currentUser.email,
+                        addedAt: Date.now()
+                    };
+
+                    promises.push(saveGameToFirebase(game));
+                    imported++;
+                }
+
+                Promise.all(promises).then(() => {
+                    document.getElementById('spread-paste').value = '';
+                    document.getElementById('ml-paste').value = '';
+                    // Show status message instead of alert (alert blocks Firebase listener)
+                    const status = document.createElement('div');
+                    status.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:white;padding:12px 24px;border-radius:8px;font-weight:bold;z-index:1000;font-size:16px;';
+                    status.textContent = 'Imported ' + imported + ' games!';
+                    document.body.appendChild(status);
+                    setTimeout(() => status.remove(), 3000);
+                });
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Open result modal
+        function openResultModal(firebaseKey) {
+            const game = games.find(g => g.firebaseKey === firebaseKey);
+            currentGameId = firebaseKey;
+            document.getElementById('modal-matchup').textContent = `${game.team} vs ${game.opponent}`;
+            document.getElementById('team-label').textContent = `${game.team} Score`;
+            document.getElementById('opp-label').textContent = `${game.opponent} Score`;
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+            currentGameId = null;
+            document.getElementById('team-score').value = '';
+            document.getElementById('opp-score').value = '';
+        }
+
+        // Save result
+        function saveResult() {
+            const teamScore = parseInt(document.getElementById('team-score').value);
+            const oppScore = parseInt(document.getElementById('opp-score').value);
+
+            if (isNaN(teamScore) || isNaN(oppScore)) {
+                alert('Please enter both scores');
+                return;
+            }
+
+            const game = games.find(g => g.firebaseKey === currentGameId);
+            const margin = teamScore - oppScore;
+            const spreadCovered = margin + game.spread > 0;
+            const mlWon = margin > 0;
+
+            game.result = {
+                teamScore,
+                oppScore,
+                margin,
+                spreadResult: spreadCovered ? 'WIN' : 'LOSS',
+                mlResult: mlWon ? 'WIN' : 'LOSS',
+                loggedBy: currentUser.email,
+                loggedAt: Date.now()
+            };
+
+            saveGameToFirebase(game).then(() => {
+                closeModal();
+            });
+        }
+
+        // Delete game
+        function deleteGame(firebaseKey) {
+            if (confirm('Delete this game? This will affect the shared data.')) {
+                deleteGameFromFirebase(firebaseKey);
+            }
+        }
+
+        // Calculate performance
+        function calculatePerformance() {
+            const gamesWithResults = games.filter(g => g.result !== null);
+            const qualifyingGames = gamesWithResults.filter(g => {
+                const analysis = calculateFitScore(g);
+                return analysis.score >= THRESHOLD;
+            });
+
+            if (qualifyingGames.length === 0) return null;
+
+            let spreadWins = 0, spreadTotal = 0, mlWins = 0, mlTotal = 0;
+            let spreadProfit = 0, mlProfit = 0;
+
+            qualifyingGames.forEach(game => {
+                const analysis = calculateFitScore(game);
+                
+                if (analysis.recommendation === 'SPREAD' || analysis.recommendation === 'BOTH') {
+                    spreadTotal++;
+                    if (game.result.spreadResult === 'WIN') {
+                        spreadWins++;
+                        spreadProfit += 100;
+                    } else {
+                        spreadProfit -= 110;
+                    }
+                }
+
+                if (analysis.recommendation === 'ML' || analysis.recommendation === 'BOTH') {
+                    mlTotal++;
+                    if (game.result.mlResult === 'WIN') {
+                        mlWins++;
+                        const ml = game.moneyline;
+                        mlProfit += ml > 0 ? ml : (100 / Math.abs(ml)) * 100;
+                    } else {
+                        mlProfit -= 100;
+                    }
+                }
+            });
+
+            return {
+                spreadRecord: `${spreadWins}-${spreadTotal - spreadWins}`,
+                spreadWinPct: spreadTotal > 0 ? ((spreadWins / spreadTotal) * 100).toFixed(1) : 0,
+                spreadROI: spreadTotal > 0 ? ((spreadProfit / (spreadTotal * 100)) * 100).toFixed(1) : 0,
+                mlRecord: `${mlWins}-${mlTotal - mlWins}`,
+                mlWinPct: mlTotal > 0 ? ((mlWins / mlTotal) * 100).toFixed(1) : 0,
+                mlROI: mlTotal > 0 ? ((mlProfit / (mlTotal * 100)) * 100).toFixed(1) : 0,
+                totalGames: qualifyingGames.length,
+                totalProfit: spreadProfit + mlProfit
+            };
+        }
+
+        // Show analytics
+        function showAnalytics() {
+            const gamesWithResults = games.filter(g => g.result !== null);
+            
+            if (gamesWithResults.length === 0) {
+                alert('No completed games yet. Log some results first!');
+                return;
+            }
+
+            // Analyze by score ranges
+            const ranges = {
+                '0-20': [],
+                '20-30': [],
+                '30-40': [],
+                '40-50': [],
+                '50+': []
+            };
+
+            gamesWithResults.forEach(game => {
+                const analysis = calculateFitScore(game);
+                const score = analysis.score;
+                
+                if (score < 20) ranges['0-20'].push(game);
+                else if (score < 30) ranges['20-30'].push(game);
+                else if (score < 40) ranges['30-40'].push(game);
+                else if (score < 50) ranges['40-50'].push(game);
+                else ranges['50+'].push(game);
+            });
+
+            // Analyze by recommendation type
+            const byRec = { SPREAD: [], ML: [], BOTH: [] };
+            gamesWithResults.forEach(game => {
+                const analysis = calculateFitScore(game);
+                byRec[analysis.recommendation].push(game);
+            });
+
+            // Analyze alignment bonus impact
+            const withAlignment = gamesWithResults.filter(g => calculateFitScore(g).bothPositive);
+            const withoutAlignment = gamesWithResults.filter(g => !calculateFitScore(g).bothPositive);
+
+            let html = '<div class="space-y-6">';
+            
+            // Performance by Score Range
+            html += '<div><h4 class="text-lg font-bold mb-3">Performance by Score Range</h4><div class="grid grid-cols-1 md:grid-cols-5 gap-3">';
+            Object.entries(ranges).forEach(([range, rangeGames]) => {
+                if (rangeGames.length === 0) return;
+                
+                let wins = 0;
+                rangeGames.forEach(g => {
+                    const analysis = calculateFitScore(g);
+                    if (analysis.recommendation === 'SPREAD' || analysis.recommendation === 'BOTH') {
+                        if (g.result.spreadResult === 'WIN') wins++;
+                    }
+                    if (analysis.recommendation === 'ML' || analysis.recommendation === 'BOTH') {
+                        if (g.result.mlResult === 'WIN') wins++;
+                    }
+                });
+                
+                const total = rangeGames.length;
+                const winPct = ((wins / total) * 100).toFixed(1);
+                
+                html += `
+                    <div class="bg-gray-50 p-3 rounded border">
+                        <div class="text-sm font-semibold">${range}</div>
+                        <div class="text-2xl font-bold">${wins}-${total-wins}</div>
+                        <div class="text-sm">${winPct}% win rate</div>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+
+            // Performance by Recommendation Type
+            html += '<div><h4 class="text-lg font-bold mb-3">Performance by Bet Type</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-3">';
+            Object.entries(byRec).forEach(([rec, recGames]) => {
+                if (recGames.length === 0) return;
+                
+                let wins = 0;
+                recGames.forEach(g => {
+                    const analysis = calculateFitScore(g);
+                    if (rec === 'SPREAD' && g.result.spreadResult === 'WIN') wins++;
+                    else if (rec === 'ML' && g.result.mlResult === 'WIN') wins++;
+                    else if (rec === 'BOTH' && (g.result.spreadResult === 'WIN' || g.result.mlResult === 'WIN')) wins++;
+                });
+                
+                const total = recGames.length;
+                const winPct = ((wins / total) * 100).toFixed(1);
+                
+                html += `
+                    <div class="bg-gray-50 p-3 rounded border">
+                        <div class="text-sm font-semibold">${rec}</div>
+                        <div class="text-2xl font-bold">${wins}-${total-wins}</div>
+                        <div class="text-sm">${winPct}% win rate</div>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+
+            // Alignment Bonus Impact
+            const withWins = withAlignment.filter(g => {
+                const analysis = calculateFitScore(g);
+                return (analysis.recommendation !== 'ML' && g.result.spreadResult === 'WIN') ||
+                       (analysis.recommendation !== 'SPREAD' && g.result.mlResult === 'WIN');
+            }).length;
+            const withTotal = withAlignment.length;
+            const withPct = withTotal > 0 ? ((withWins / withTotal) * 100).toFixed(1) : 0;
+
+            const withoutWins = withoutAlignment.filter(g => {
+                const analysis = calculateFitScore(g);
+                return (analysis.recommendation !== 'ML' && g.result.spreadResult === 'WIN') ||
+                       (analysis.recommendation !== 'SPREAD' && g.result.mlResult === 'WIN');
+            }).length;
+            const withoutTotal = withoutAlignment.length;
+            const withoutPct = withoutTotal > 0 ? ((withoutWins / withoutTotal) * 100).toFixed(1) : 0;
+
+            html += `
+                <div>
+                    <h4 class="text-lg font-bold mb-3">Alignment Bonus Impact ⭐</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-green-50 p-3 rounded border border-green-200">
+                            <div class="text-sm font-semibold">With Alignment</div>
+                            <div class="text-2xl font-bold">${withWins}-${withTotal-withWins}</div>
+                            <div class="text-sm">${withPct}% win rate</div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded border">
+                            <div class="text-sm font-semibold">Without Alignment</div>
+                            <div class="text-2xl font-bold">${withoutWins}-${withoutTotal-withoutWins}</div>
+                            <div class="text-sm">${withoutPct}% win rate</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            html += '</div>';
+            
+            document.getElementById('analytics-content').innerHTML = html;
+            document.getElementById('analytics-modal').classList.remove('hidden');
+        }
+
+        function closeAnalytics() {
+            document.getElementById('analytics-modal').classList.add('hidden');
+        }
+
+        // Export data
+        function exportData() {
+            const data = {
+                exportDate: new Date().toISOString(),
+                games: games,
+                performance: calculatePerformance()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nba-betting-data-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        // Render performance dashboard
+        function renderPerformance() {
+            const perf = calculatePerformance();
+            const container = document.getElementById('performance-dashboard');
+            
+            if (!perf) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const profitColor = perf.totalProfit >= 0 ? 'text-green-200' : 'text-red-200';
+            
+            container.innerHTML = `
+                <div class="bg-gradient-to-r from-green-600 to-blue-600 rounded-lg shadow-lg p-6 mb-6 text-white">
+                    <h2 class="text-2xl font-bold mb-4">System Performance (Score ≥${THRESHOLD})</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white bg-opacity-20 rounded p-3">
+                            <div class="text-sm opacity-90">Spread Bets</div>
+                            <div class="text-2xl font-bold">${perf.spreadRecord}</div>
+                            <div class="text-sm">${perf.spreadWinPct}% Win Rate</div>
+                            <div class="text-sm font-bold">${perf.spreadROI}% ROI</div>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded p-3">
+                            <div class="text-sm opacity-90">ML Bets</div>
+                            <div class="text-2xl font-bold">${perf.mlRecord}</div>
+                            <div class="text-sm">${perf.mlWinPct}% Win Rate</div>
+                            <div class="text-sm font-bold">${perf.mlROI}% ROI</div>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded p-3">
+                            <div class="text-sm opacity-90">Total Profit</div>
+                            <div class="text-2xl font-bold ${profitColor}">
+                                $${perf.totalProfit > 0 ? '+' : ''}${perf.totalProfit.toFixed(0)}
+                            </div>
+                            <div class="text-sm">On $100 units</div>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded p-3">
+                            <div class="text-sm opacity-90">Games Tracked</div>
+                            <div class="text-2xl font-bold">${perf.totalGames}</div>
+                            <div class="text-sm">Qualified bets</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render games list
+        function renderGamesList() {
+            const container = document.getElementById('games-list');
+            const sorted = [...games].sort((a, b) => {
+                const scoreA = calculateFitScore(a).score;
+                const scoreB = calculateFitScore(b).score;
+                return scoreB - scoreA;
+            });
+
+            if (sorted.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-lg p-12 text-center">
+                        <p class="text-gray-600 text-lg">No games added yet. Import from SBD above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4">All Games (Ranked by Fit Score)</h2>
+                    <div class="space-y-4">
+                        ${sorted.map((game, index) => {
+                            const analysis = calculateFitScore(game);
+                            const isStrong = analysis.score >= 50;
+                            const isMedium = analysis.score >= 25 && analysis.score < 50;
+                            const borderClass = isStrong ? 'border-green-500 bg-green-50' :
+                                              isMedium ? 'border-yellow-500 bg-yellow-50' :
+                                              'border-gray-300 bg-white';
+                            
+                            return `
+                                <div class="border-2 ${borderClass} rounded-lg p-4">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-2xl font-bold text-gray-800">#${index + 1}</span>
+                                                <h3 class="text-xl font-bold text-gray-800">${game.team}</h3>
+                                                ${analysis.bothPositive ? '<span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">BOTH ALIGNED ⭐</span>' : ''}
+                                            </div>
+                                            <div class="text-sm text-gray-600 mt-1">
+                                                ${game.spread > 0 ? '+' : ''}${game.spread} vs ${game.opponent} | ML: ${game.moneyline > 0 ? '+' : ''}${game.moneyline} | ${game.date}
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-3xl font-bold ${isStrong ? 'text-green-700' : isMedium ? 'text-yellow-700' : 'text-gray-700'}">
+                                                ${analysis.score}
+                                            </div>
+                                            <div class="text-xs text-gray-600">FIT SCORE</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3 mb-3">
+                                        <div class="bg-white p-2 rounded border text-sm">
+                                            <div class="font-semibold mb-1">SPREAD ${analysis.recommendation === 'SPREAD' ? '✅' : analysis.recommendation === 'BOTH' ? '✅' : ''}</div>
+                                            <div>Expected: ${analysis.spreadBaseline}% | Actual: ${game.spreadMoneyPct}%</div>
+                                            <div class="font-bold ${analysis.spreadGap > 0 ? 'text-green-600' : 'text-red-600'}">
+                                                Gap: ${analysis.spreadGap > 0 ? '+' : ''}${analysis.spreadGap}%
+                                            </div>
+                                        </div>
+                                        <div class="bg-white p-2 rounded border text-sm">
+                                            <div class="font-semibold mb-1">MONEYLINE ${analysis.recommendation === 'ML' ? '✅' : analysis.recommendation === 'BOTH' ? '✅' : ''}</div>
+                                            <div>Expected: ${analysis.mlBaseline}% | Actual: ${game.mlMoneyPct}%</div>
+                                            <div class="font-bold ${analysis.mlGap > 0 ? 'text-green-600' : 'text-red-600'}">
+                                                Gap: ${analysis.mlGap > 0 ? '+' : ''}${analysis.mlGap}%
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-between items-center">
+                                        ${game.result ? `
+                                            <div class="text-sm">
+                                                <div class="font-semibold">Final: ${game.team} ${game.result.teamScore} - ${game.opponent} ${game.result.oppScore}</div>
+                                                <div class="flex gap-3 mt-1">
+                                                    <span class="${game.result.spreadResult === 'WIN' ? 'text-green-600 font-bold' : 'text-red-600'}">
+                                                        ATS: ${game.result.spreadResult}
+                                                    </span>
+                                                    <span class="${game.result.mlResult === 'WIN' ? 'text-green-600 font-bold' : 'text-red-600'}">
+                                                        ML: ${game.result.mlResult}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ` : `
+                                            <button onclick="openResultModal('${game.firebaseKey}')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-blue-700">
+                                                Log Result
+                                            </button>
+                                        `}
+                                        <button onclick="deleteGame('${game.firebaseKey}')" class="text-red-600 hover:text-red-800 text-sm font-semibold">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render everything
+        function render() {
+            try {
+                renderPerformance();
+                renderGamesList();
+            } catch(e) {
+                // Show error on screen so we can debug on mobile
+                const errDiv = document.createElement('div');
+                errDiv.style.cssText = 'position:fixed;top:60px;left:10px;right:10px;background:red;color:white;padding:16px;border-radius:8px;z-index:9999;font-size:14px;white-space:pre-wrap;max-height:300px;overflow:auto;';
+                errDiv.textContent = 'RENDER ERROR:\n' + e.message + '\n\nStack:\n' + e.stack;
+                document.body.appendChild(errDiv);
+            }
+        }
+
+        // Set today's date as default
+        document.getElementById('bulk-date').valueAsDate = new Date();
+    </script>
+</body>
+</html>
