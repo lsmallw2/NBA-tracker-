@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="dark-content">
+    <title>NBA Edge Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        * { -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
+            min-height: 100vh; 
+            padding-bottom: 40px;
+            color: #fff;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .nba-gradient {
+            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #dc2626 100%);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+            transition: all 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 14px;
+            border-left: 4px solid #555;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        .game-card:active { transform: scale(0.99); }
+        .game-card.strong { border-left-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+        .game-card.medium { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.08); }
+        
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        .score-num {
+            font-size: 36px;
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .score-num.strong { background: linear-gradient(135deg, #10b981, #34d399); -webkit-background-clip: text; }
+        .score-num.medium { background: linear-gradient(135deg, #f59e0b, #fbbf24); -webkit-background-clip: text; }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 12px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-box .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .stat-box .value { font-size: 14px; font-weight: 700; color: #fff; margin-top: 4px; }
+        .gap-positive { color: #10b981; font-weight: 800; }
+        .gap-negative { color: #ef4444; font-weight: 800; }
+        
+        textarea, input[type="date"], input[type="number"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            outline: none;
+        }
+        textarea::placeholder, input::placeholder { color: #6b7280; }
+        textarea:focus, input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: flex-end;
+        }
+        
+        .modal-sheet {
+            background: linear-gradient(180deg, #1a1f3a 0%, #0f1419 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 24px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-handle {
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+        
+        .header-bar {
+            background: rgba(10, 14, 39, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .perf-card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .perf-stat {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .perf-stat .label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
+        .perf-stat .value { font-size: 26px; font-weight: 900; margin-top: 4px; }
+        .perf-stat .sub { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+        
+        .content-wrapper { position: relative; z-index: 1; }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        body::after {
+            content: '🏀';
+            position: fixed;
+            bottom: -100px;
+            right: -100px;
+            font-size: 600px;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+            transform: rotate(-15deg);
+        }
+        
+        .last-updated {
+            font-size: 11px;
+            color: #6b7280;
+            text-align: center;
+            padding: 8px 0 4px;
+            font-weight: 500;
+        }
+        
+        select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        select:focus { border-color: #3b82f6; }
+    </style>
+</head>
+<body>
+
+<div class="content-wrapper">
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+    <div style="max-width: 360px; margin: 120px auto 0; padding: 0 24px; text-align: center; position: relative; z-index: 2;">
+        <div class="glass-card" style="padding: 40px 24px;">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 20px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);">
+                <span style="font-size: 42px;">🏀</span>
+            </div>
+            <h1 style="font-size: 32px; font-weight: 900; color: #fff; margin-bottom: 8px; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">NBA EDGE</h1>
+            <p style="color: #9ca3af; font-size: 15px; margin-bottom: 32px; font-weight: 500;">Contrarian betting intelligence</p>
+            <button onclick="signInWithGoogle()" style="width: 100%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);">
+                <svg width="22" height="22" viewBox="0 0 24 24"><path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="white" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+            </button>
+            <p style="font-size: 12px; color: #6b7280; margin-top: 20px; font-weight: 500;">Shared analytics across your crew</p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" class="hidden">
+    <!-- Header -->
+    <div class="header-bar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 20px;">🏀</span>
+            </div>
+            <div>
+                <div style="font-size: 16px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">NBA EDGE</div>
+                <div style="font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Contrarian Intel</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 14px; align-items: center;">
+            <button onclick="showPerformancePage()" style="font-size: 22px; cursor: pointer; background: none; border: none; padding: 4px; filter: grayscale(0.3);">📈</button>
+            <button onclick="showAnalytics()" style="font-size: 22px; cursor: pointer; background: none; border: none; padding: 4px; filter: grayscale(0.3);">📊</button>
+            <button onclick="signOut()" style="font-size: 12px; color: #6b7280; cursor: pointer; background: none; border: none; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Exit</button>
+        </div>
+    </div>
+
+    <!-- Last Updated -->
+    <div class="last-updated" id="last-updated-text">
+        Last updated: — <span style="color: #16a34a; font-weight: 600;" id="results-count"></span>
+    </div>
+
+    <!-- Performance Dashboard -->
+    <div id="performance-dashboard" style="padding: 0 16px;"></div>
+
+    <!-- Import Section -->
+    <div class="glass-card" style="margin: 14px 16px 0; padding: 0;">
+        <div style="padding: 20px 20px 10px;">
+            <div style="font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px; letter-spacing: 0.3px;">Import from SBD</div>
+            <div style="font-size: 12px; color: #9ca3af; font-weight: 500;">Paste spread table, then moneyline table</div>
+        </div>
+        <div style="padding: 0 20px;">
+            <label style="font-size: 11px; font-weight: 700; color: #9ca3af; display: block; margin-bottom: 8px; margin-top: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Spread Data</label>
+            <textarea id="spread-paste" rows="5" placeholder="Paste spread table here..." style="font-family: 'SF Mono', Monaco, monospace;"></textarea>
+            <label style="font-size: 11px; font-weight: 700; color: #9ca3af; display: block; margin-bottom: 8px; margin-top: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Moneyline Data</label>
+            <textarea id="ml-paste" rows="5" placeholder="Paste moneyline table here..." style="font-family: 'SF Mono', Monaco, monospace;"></textarea>
+        </div>
+        <div style="padding: 16px 20px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <input type="date" id="bulk-date" style="flex: 1; min-width: 140px;">
+            <button onclick="importFromSBD()" class="btn-primary" style="flex: 1; min-width: 120px;">Import Games</button>
+            <button onclick="clearAllGames()" class="btn-danger">Clear</button>
+        </div>
+    </div>
+
+    <!-- Games List -->
+    <div id="games-list" style="padding: 12px 16px 0;"></div>
+
+    <!-- Result Modal (bottom sheet) -->
+    <div id="result-modal" class="modal-overlay hidden" onclick="closeModalOutside(event)">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <h3 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px;">Log Result</h3>
+            <p id="modal-matchup" style="color: #9ca3af; font-size: 14px; margin-bottom: 20px;"></p>
+            <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                <div style="flex: 1;">
+                    <label id="team-label" style="font-size: 12px; font-weight: 600; color: #9ca3af; display: block; margin-bottom: 6px;"></label>
+                    <input type="number" id="team-score" placeholder="0">
+                </div>
+                <div style="flex: 1;">
+                    <label id="opp-label" style="font-size: 12px; font-weight: 600; color: #9ca3af; display: block; margin-bottom: 6px;"></label>
+                    <input type="number" id="opp-score" placeholder="0">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveResult()" class="btn-primary" style="flex: 1;">Save Result</button>
+                <button onclick="closeModal()" class="btn-secondary" style="flex: 0.6;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Modal -->
+    <div id="analytics-modal" class="modal-overlay hidden" onclick="closeAnalyticsOutside(event)">
+        <div class="modal-sheet" style="max-height: 85vh;">
+            <div class="modal-handle"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                <h3 style="font-size: 18px; font-weight: 700; color: #fff;">📊 Quick Analytics</h3>
+                <button onclick="closeAnalytics()" style="font-size: 22px; color: #6b7280; background: none; border: none; cursor: pointer;">&times;</button>
+            </div>
+            <div id="analytics-content"></div>
+        </div>
+    </div>
+
+    <!-- Performance Page Modal -->
+    <div id="performance-modal" class="modal-overlay hidden" onclick="closePerformanceOutside(event)">
+        <div class="modal-sheet" style="max-height: 90vh;">
+            <div class="modal-handle"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                <h3 style="font-size: 18px; font-weight: 700; color: #fff;">📈 Full Performance</h3>
+                <button onclick="closePerformance()" style="font-size: 22px; color: #6b7280; background: none; border: none; cursor: pointer;">&times;</button>
+            </div>
+            
+            <!-- Filters -->
+            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 12px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Filters</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 11px; color: #9ca3af; display: block; margin-bottom: 4px;">Min Score</label>
+                        <select id="perf-min-score" onchange="renderPerformancePage()" style="width: 100%; padding: 8px; border-radius: 8px; font-size: 14px;">
+                            <option value="0">All Games</option>
+                            <option value="20" selected>20+</option>
+                            <option value="30">30+</option>
+                            <option value="40">40+</option>
+                            <option value="50">50+</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; color: #9ca3af; display: block; margin-bottom: 4px;">Date Range</label>
+                        <select id="perf-date-range" onchange="renderPerformancePage()" style="width: 100%; padding: 8px; border-radius: 8px; font-size: 14px;">
+                            <option value="all">All Time</option>
+                            <option value="7">Last 7 Days</option>
+                            <option value="30">Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="performance-content"></div>
+        </div>
+    </div>
+</div>
+
+</div> <!-- Close content-wrapper -->
+
+<script>
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyB8EmsdGFvQLRRWev3zM8wzSXXhgWjHeO4",
+        authDomain: "nba-tracker-641f0.firebaseapp.com",
+        databaseURL: "https://nba-tracker-641f0-default-rtdb.firebaseio.com",
+        projectId: "nba-tracker-641f0",
+        storageBucket: "nba-tracker-641f0.firebasestorage.app",
+        messagingSenderId: "29717054876",
+        appId: "1:29717054876:web:fc4bf3d1242967fe857459"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    let currentUser = null;
+    let games = [];
+    let results = [];
+    let currentGameId = null;
+    const THRESHOLD = 20;
+    let currentGameId = null;
+    const THRESHOLD = 20;
+
+    // Handle redirect result
+    auth.getRedirectResult().then(result => {
+        if (result.user) console.log('Signed in via redirect');
+    }).catch(e => console.error('Redirect:', e));
+
+    // Auth observer
+    auth.onAuthStateChanged(user => {
+        console.log('Auth state:', user ? user.email : 'not signed in');
+        if (user) {
+            currentUser = user;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            loadGamesFromFirebase();
+        } else {
+            currentUser = null;
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('main-app').classList.add('hidden');
+        }
+    });
+
+    // Sign in
+    function signInWithGoogle() {
+        console.log('🔐 Sign in clicked');
+        const provider = new firebase.auth.GoogleAuthProvider();
+        console.log('Trying popup...');
+        auth.signInWithPopup(provider).then(result => {
+            console.log('✅ Popup success!', result.user.email);
+        }).catch(err => {
+            console.log('❌ Popup failed:', err.code, '- trying redirect...');
+            auth.signInWithRedirect(provider);
+        });
+    }
+
+    function signOut() { auth.signOut(); }
+
+    // Firebase CRUD
+    function loadGamesFromFirebase() {
+        database.ref('games').on('value', snapshot => {
+            games = [];
+            snapshot.forEach(child => {
+                games.push({ firebaseKey: child.key, ...child.val() });
+            });
+            console.log('Loaded games:', games.length);
+            render();
+        });
+        
+        database.ref('results').on('value', snapshot => {
+            results = [];
+            snapshot.forEach(child => {
+                results.push({ firebaseKey: child.key, ...child.val() });
+            });
+            console.log('✓ Loaded results from Firebase:', results.length, 'results');
+            console.log('Results data:', results);
+            
+            // Update results count on page
+            const countEl = document.getElementById('results-count');
+            if (countEl) {
+                countEl.textContent = results.length > 0 ? `(${results.length} saved results)` : '';
+            }
+            
+            render();
+        });
+    }
+
+    function saveGameToFirebase(game) {
+        const d = {...game};
+        delete d.firebaseKey;
+        return game.firebaseKey
+            ? database.ref('games/' + game.firebaseKey).update(d)
+            : database.ref('games').push(d);
+    }
+
+    function deleteGameFromFirebase(key) {
+        return database.ref('games/' + key).remove();
+    }
+
+    // Scoring
+    function calculateMLBaseline(spread) {
+        return Math.max(5, Math.min(95, 50 + (parseFloat(spread) * -2.8)));
+    }
+
+    function calculateFitScore(game) {
+        const spreadBaseline = 50;
+        const mlBaseline = calculateMLBaseline(game.spread);
+        const spreadGap = spreadBaseline - game.spreadMoneyPct;
+        const mlGap = mlBaseline - game.mlMoneyPct;
+        const weightedScore = (spreadGap * 0.70) + (mlGap * 0.30);
+        const baseScore = Math.max(0, weightedScore * 1.5);
+        const bothPositive = spreadGap > 0 && mlGap > 0;
+        const alignmentBonus = bothPositive ? 5 : 0;
+        return {
+            score: Math.round((baseScore + alignmentBonus) * 10) / 10,
+            spreadBaseline,
+            mlBaseline: Math.round(mlBaseline * 10) / 10,
+            spreadGap: Math.round(spreadGap * 10) / 10,
+            mlGap: Math.round(mlGap * 10) / 10,
+            bothPositive,
+            recommendation: (mlGap > 10 || spreadGap > 10) ? 'BOTH' : (spreadGap > mlGap ? 'SPREAD' : 'ML')
+        };
+    }
+
+    // Parser
+    function parseSBDTable(text) {
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        const games = [];
+        let i = 0;
+        while (i < lines.length) {
+            const teamMatch = lines[i].match(/logo([A-Z]{2,4})$/);
+            if (teamMatch) {
+                const team = teamMatch[1];
+                i++;
+                while (i < lines.length && lines[i].toLowerCase().includes('logo')) i++;
+                if (i >= lines.length) break;
+                let lineValue = lines[i].replace('−', '-').replace('+', '');
+                const parsedLine = parseFloat(lineValue);
+                if (isNaN(parsedLine)) { i++; continue; }
+                i++;
+                if (i >= lines.length) break;
+                i++; // skip BET%
+                if (i >= lines.length) break;
+                const moneyPct = parseFloat(lines[i].replace('%', ''));
+                if (isNaN(moneyPct)) { i++; continue; }
+                games.push({ team, opponent: 'Unknown', line: parsedLine, moneyPct });
+            }
+            i++;
+        }
+        return games;
+    }
+
+    // Import
+    function importFromSBD() {
+        const spreadText = document.getElementById('spread-paste').value.trim();
+        const mlText = document.getElementById('ml-paste').value.trim();
+        const gameDate = document.getElementById('bulk-date').value;
+        if (!spreadText || !mlText) { showToast('Paste both spread and ML data', '#dc2626'); return; }
+        try {
+            const spreadData = parseSBDTable(spreadText);
+            const mlData = parseSBDTable(mlText);
+            if (spreadData.length === 0 || mlData.length === 0) {
+                showToast('Parse failed: ' + spreadData.length + ' spread, ' + mlData.length + ' ML', '#dc2626');
+                return;
+            }
+            // Pair opponents
+            for (let i = 0; i < spreadData.length; i += 2) {
+                if (i + 1 < spreadData.length) {
+                    spreadData[i].opponent = spreadData[i+1].team;
+                    spreadData[i+1].opponent = spreadData[i].team;
+                }
+            }
+            for (let i = 0; i < mlData.length; i += 2) {
+                if (i + 1 < mlData.length) {
+                    mlData[i].opponent = mlData[i+1].team;
+                    mlData[i+1].opponent = mlData[i].team;
+                }
+            }
+            // Delete existing for this date, then import
+            const delPromises = games.filter(g => g.date === gameDate && g.firebaseKey).map(g => database.ref('games/' + g.firebaseKey).remove());
+            Promise.all(delPromises).then(() => {
+                let imported = 0;
+                const promises = [];
+                for (let i = 0; i < spreadData.length; i++) {
+                    const spread = spreadData[i];
+                    const ml = mlData.find(m => m.team === spread.team);
+                    if (!ml) continue;
+                    promises.push(saveGameToFirebase({
+                        id: Date.now() + i,
+                        team: spread.team,
+                        opponent: spread.opponent,
+                        spread: spread.line,
+                        moneyline: ml.line,
+                        spreadMoneyPct: spread.moneyPct,
+                        mlMoneyPct: ml.moneyPct,
+                        date: gameDate || new Date().toISOString().split('T')[0],
+                        addedBy: currentUser.email,
+                        addedAt: Date.now()
+                    }));
+                    imported++;
+                }
+                Promise.all(promises).then(() => {
+                    document.getElementById('spread-paste').value = '';
+                    document.getElementById('ml-paste').value = '';
+                    showToast('Imported ' + imported + ' games!', '#1d9461');
+                });
+            });
+        } catch (e) {
+            showToast('Error: ' + e.message, '#dc2626');
+        }
+    }
+
+    function clearAllGames() {
+        const hasUnsavedResults = games.some(g => g.result && g.result.spreadResult);
+        let confirmMsg = 'Clear all games?';
+        
+        if (hasUnsavedResults && results.length === 0) {
+            confirmMsg = '⚠️ WARNING: You have logged results that haven\'t been saved to the permanent results collection yet. Clearing now will DELETE YOUR PERFORMANCE DATA. Are you absolutely sure?';
+        } else if (hasUnsavedResults) {
+            confirmMsg = 'Clear all upcoming games? (Your logged results are safely stored and will be kept)';
+        }
+        
+        if (confirm(confirmMsg)) {
+            database.ref('games').remove().then(() => showToast('Games cleared!', '#1d9461'));
+        }
+    }
+
+    // Toast
+    function showToast(msg, bg) {
+        const t = document.createElement('div');
+        t.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:' + bg + ';color:#fff;padding:12px 24px;border-radius:24px;font-weight:600;z-index:999;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2800);
+    }
+
+    // Result Modal
+    function openResultModal(key) {
+        const game = games.find(g => g.firebaseKey === key);
+        currentGameId = key;
+        document.getElementById('modal-matchup').textContent = game.team + ' vs ' + game.opponent + ' | ' + (game.spread > 0 ? '+' : '') + game.spread;
+        document.getElementById('team-label').textContent = game.team + ' Score';
+        document.getElementById('opp-label').textContent = game.opponent + ' Score';
+        document.getElementById('result-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('result-modal').classList.add('hidden');
+        currentGameId = null;
+        document.getElementById('team-score').value = '';
+        document.getElementById('opp-score').value = '';
+    }
+
+    function closeModalOutside(e) { if (e.target === document.getElementById('result-modal')) closeModal(); }
+
+    function saveResult() {
+        const ts = parseInt(document.getElementById('team-score').value);
+        const os = parseInt(document.getElementById('opp-score').value);
+        if (isNaN(ts) || isNaN(os)) { showToast('Enter both scores', '#dc2626'); return; }
+        const game = games.find(g => g.firebaseKey === currentGameId);
+        const margin = ts - os;
+        const analysis = calculateFitScore(game);
+        
+        // Save result to BOTH game and permanent results collection
+        const resultData = {
+            team: game.team,
+            opponent: game.opponent,
+            date: game.date,
+            spread: game.spread,
+            moneyline: game.moneyline,
+            spreadMoneyPct: game.spreadMoneyPct,
+            mlMoneyPct: game.mlMoneyPct,
+            teamScore: ts,
+            oppScore: os,
+            margin: margin,
+            spreadResult: (margin + game.spread > 0) ? 'WIN' : 'LOSS',
+            mlResult: margin > 0 ? 'WIN' : 'LOSS',
+            fitScore: analysis.score,
+            recommendation: analysis.recommendation,
+            spreadGap: analysis.spreadGap,
+            mlGap: analysis.mlGap,
+            bothAligned: analysis.bothPositive,
+            loggedBy: currentUser.email,
+            loggedAt: Date.now()
+        };
+        
+        game.result = {
+            teamScore: ts, oppScore: os, margin,
+            spreadResult: resultData.spreadResult,
+            mlResult: resultData.mlResult,
+            loggedBy: currentUser.email, loggedAt: Date.now()
+        };
+        
+        console.log('SAVING RESULT:', resultData);
+        console.log('To path: results/');
+        
+        // Save to BOTH locations and wait for both to complete
+        Promise.all([
+            saveGameToFirebase(game),
+            database.ref('results').push(resultData)
+        ]).then(() => {
+            console.log('✓ Result saved to both games and results collections');
+            closeModal();
+            showToast('Result locked in! 🔒', '#1d9461');
+        }).catch(err => {
+            console.error('ERROR saving result:', err);
+            showToast('Save failed: ' + err.message, '#dc2626');
+        });
+    }
+
+    function deleteGame(key) {
+        if (confirm('Delete this game?')) deleteGameFromFirebase(key);
+    }
+
+    // Performance
+    function calculatePerformance() {
+        // Use results collection if available, otherwise fall back to games with results
+        let dataSource = results.length > 0 ? results : games.filter(g => g.result && g.result.spreadResult).map(g => {
+            const a = calculateFitScore(g);
+            return {
+                ...g.result,
+                team: g.team,
+                opponent: g.opponent,
+                date: g.date,
+                spread: g.spread,
+                moneyline: g.moneyline,
+                spreadMoneyPct: g.spreadMoneyPct,
+                mlMoneyPct: g.mlMoneyPct,
+                fitScore: a.score,
+                recommendation: a.recommendation,
+                spreadGap: a.spreadGap,
+                mlGap: a.mlGap,
+                bothAligned: a.bothPositive
+            };
+        });
+        
+        const qualified = dataSource.filter(r => r.fitScore >= THRESHOLD);
+        if (qualified.length === 0) return null;
+        
+        let sW = 0, sT = 0, mW = 0, mT = 0, sP = 0, mP = 0;
+        qualified.forEach(result => {
+            if (result.recommendation === 'SPREAD' || result.recommendation === 'BOTH') {
+                sT++;
+                if (result.spreadResult === 'WIN') { sW++; sP += 100; } 
+                else { sP -= 110; }
+            }
+            if (result.recommendation === 'ML' || result.recommendation === 'BOTH') {
+                mT++;
+                if (result.mlResult === 'WIN') { 
+                    mW++; 
+                    const ml = result.moneyline;
+                    mP += ml > 0 ? ml : (100/Math.abs(ml))*100; 
+                } else { 
+                    mP -= 100; 
+                }
+            }
+        });
+        
+        return {
+            spreadRecord: sW+'-'+(sT-sW), 
+            spreadWinPct: sT > 0 ? ((sW/sT)*100).toFixed(1) : 0, 
+            spreadROI: sT > 0 ? ((sP/(sT*100))*100).toFixed(1) : 0,
+            mlRecord: mW+'-'+(mT-mW), 
+            mlWinPct: mT > 0 ? ((mW/mT)*100).toFixed(1) : 0, 
+            mlROI: mT > 0 ? ((mP/(mT*100))*100).toFixed(1) : 0,
+            totalGames: qualified.length, 
+            totalProfit: sP + mP
+        };
+    }
+
+    // Analytics
+    function showAnalytics() {
+        // Use results if available, otherwise fall back to games with results
+        let dataSource = results.length > 0 ? results : games.filter(g => g.result && g.result.spreadResult).map(g => {
+            const a = calculateFitScore(g);
+            return {
+                ...g.result,
+                team: g.team,
+                opponent: g.opponent,
+                date: g.date,
+                spread: g.spread,
+                moneyline: g.moneyline,
+                spreadMoneyPct: g.spreadMoneyPct,
+                mlMoneyPct: g.mlMoneyPct,
+                fitScore: a.score,
+                recommendation: a.recommendation,
+                spreadGap: a.spreadGap,
+                mlGap: a.mlGap,
+                bothAligned: a.bothPositive
+            };
+        });
+        
+        if (dataSource.length === 0) { 
+            showToast('No results logged yet', '#888'); 
+            return; 
+        }
+        
+        const ranges = { '0-20': [], '20-30': [], '30-40': [], '40-50': [], '50+': [] };
+        dataSource.forEach(r => {
+            const s = r.fitScore;
+            if (s < 20) ranges['0-20'].push(r);
+            else if (s < 30) ranges['20-30'].push(r);
+            else if (s < 40) ranges['30-40'].push(r);
+            else if (s < 50) ranges['40-50'].push(r);
+            else ranges['50+'].push(r);
+        });
+        
+        let html = '<div style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Performance by Score Range</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;">';
+        Object.entries(ranges).forEach(([range, arr]) => {
+            if (!arr.length) return;
+            let w = 0, total = 0;
+            arr.forEach(r => { 
+                if (r.recommendation === 'SPREAD' || r.recommendation === 'BOTH') {
+                    total++;
+                    if (r.spreadResult === 'WIN') w++;
+                }
+                if (r.recommendation === 'ML' || r.recommendation === 'BOTH') {
+                    total++;
+                    if (r.mlResult === 'WIN') w++;
+                }
+            });
+            html += `<div style="background:#f7f7f7;border-radius:12px;padding:14px;border:1px solid #eee;">
+                <div style="font-size:13px;font-weight:700;color:#444;">${range}</div>
+                <div style="font-size:22px;font-weight:700;margin-top:4px;">${w}-${total-w}</div>
+                <div style="font-size:12px;color:#888;">${total > 0 ? ((w/total)*100).toFixed(0) : 0}%</div>
+            </div>`;
+        });
+        html += '</div>';
+        
+        const aligned = dataSource.filter(r => r.bothAligned);
+        const notAligned = dataSource.filter(r => !r.bothAligned);
+        let aw = 0, at = 0, nw = 0, nt = 0;
+        aligned.forEach(r => { 
+            if (r.recommendation === 'SPREAD' || r.recommendation === 'BOTH') {
+                at++;
+                if (r.spreadResult === 'WIN') aw++;
+            }
+            if (r.recommendation === 'ML' || r.recommendation === 'BOTH') {
+                at++;
+                if (r.mlResult === 'WIN') aw++;
+            }
+        });
+        notAligned.forEach(r => { 
+            if (r.recommendation === 'SPREAD' || r.recommendation === 'BOTH') {
+                nt++;
+                if (r.spreadResult === 'WIN') nw++;
+            }
+            if (r.recommendation === 'ML' || r.recommendation === 'BOTH') {
+                nt++;
+                if (r.mlResult === 'WIN') nw++;
+            }
+        });
+        
+        html += '<div style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Alignment Impact ⭐</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+        html += `<div style="background:#f0fdf4;border-radius:12px;padding:14px;border:1px solid #bbf7d0;">
+            <div style="font-size:12px;font-weight:600;color:#16a34a;">Both Aligned</div>
+            <div style="font-size:22px;font-weight:700;margin-top:4px;">${aw}-${at-aw}</div>
+            <div style="font-size:12px;color:#888;">${at > 0 ? ((aw/at)*100).toFixed(0) : 0}%</div>
+        </div>`;
+        html += `<div style="background:#f7f7f7;border-radius:12px;padding:14px;border:1px solid #eee;">
+            <div style="font-size:12px;font-weight:600;color:#666;">Not Aligned</div>
+            <div style="font-size:22px;font-weight:700;margin-top:4px;">${nw}-${nt-nw}</div>
+            <div style="font-size:12px;color:#888;">${nt > 0 ? ((nw/nt)*100).toFixed(0) : 0}%</div>
+        </div>`;
+        html += '</div>';
+        
+        document.getElementById('analytics-content').innerHTML = html;
+        document.getElementById('analytics-modal').classList.remove('hidden');
+    }
+
+    function closeAnalytics() { document.getElementById('analytics-modal').classList.add('hidden'); }
+    function closeAnalyticsOutside(e) { if (e.target === document.getElementById('analytics-modal')) closeAnalytics(); }
+
+    // Performance Page
+    function showPerformancePage() {
+        document.getElementById('performance-modal').classList.remove('hidden');
+        renderPerformancePage();
+    }
+
+    function closePerformance() { document.getElementById('performance-modal').classList.add('hidden'); }
+    function closePerformanceOutside(e) { if (e.target === document.getElementById('performance-modal')) closePerformance(); }
+
+    function renderPerformancePage() {
+        let dataSource = results.length > 0 ? results : games.filter(g => g.result && g.result.spreadResult).map(g => {
+            const a = calculateFitScore(g);
+            return {
+                ...g.result,
+                team: g.team,
+                opponent: g.opponent,
+                date: g.date,
+                spread: g.spread,
+                moneyline: g.moneyline,
+                spreadMoneyPct: g.spreadMoneyPct,
+                mlMoneyPct: g.mlMoneyPct,
+                fitScore: a.score,
+                recommendation: a.recommendation,
+                spreadGap: a.spreadGap,
+                mlGap: a.mlGap,
+                bothAligned: a.bothPositive
+            };
+        });
+
+        if (dataSource.length === 0) {
+            document.getElementById('performance-content').innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:48px;margin-bottom:12px;">📊</div><div style="color:#999;font-size:15px;">No results yet. Log some game outcomes!</div></div>';
+            return;
+        }
+
+        // Apply filters
+        const minScore = parseInt(document.getElementById('perf-min-score').value);
+        const dateRange = document.getElementById('perf-date-range').value;
+        
+        let filtered = dataSource.filter(r => r.fitScore >= minScore);
+        
+        if (dateRange !== 'all') {
+            const cutoff = Date.now() - (parseInt(dateRange) * 24 * 60 * 60 * 1000);
+            filtered = filtered.filter(r => r.loggedAt >= cutoff);
+        }
+
+        if (filtered.length === 0) {
+            document.getElementById('performance-content').innerHTML = '<div style="text-align:center;padding:40px 20px;color:#999;font-size:14px;">No results match these filters</div>';
+            return;
+        }
+
+        // Calculate overall stats
+        let spreadWins = 0, spreadTotal = 0, mlWins = 0, mlTotal = 0;
+        let spreadProfit = 0, mlProfit = 0;
+        
+        filtered.forEach(r => {
+            if (r.recommendation === 'SPREAD' || r.recommendation === 'BOTH') {
+                spreadTotal++;
+                if (r.spreadResult === 'WIN') { spreadWins++; spreadProfit += 100; }
+                else { spreadProfit -= 110; }
+            }
+            if (r.recommendation === 'ML' || r.recommendation === 'BOTH') {
+                mlTotal++;
+                if (r.mlResult === 'WIN') {
+                    mlWins++;
+                    const ml = r.moneyline;
+                    mlProfit += ml > 0 ? ml : (100/Math.abs(ml))*100;
+                } else {
+                    mlProfit -= 100;
+                }
+            }
+        });
+
+        const spreadWinPct = spreadTotal > 0 ? ((spreadWins/spreadTotal)*100).toFixed(1) : 0;
+        const mlWinPct = mlTotal > 0 ? ((mlWins/mlTotal)*100).toFixed(1) : 0;
+        const spreadROI = spreadTotal > 0 ? ((spreadProfit/(spreadTotal*100))*100).toFixed(1) : 0;
+        const mlROI = mlTotal > 0 ? ((mlProfit/(mlTotal*100))*100).toFixed(1) : 0;
+        const totalProfit = spreadProfit + mlProfit;
+        const totalBets = spreadTotal + mlTotal;
+        const totalWins = spreadWins + mlWins;
+
+        let html = `
+            <div style="background:linear-gradient(135deg,#1d9461,#1e6f9a);border-radius:14px;padding:18px;margin-bottom:14px;color:white;">
+                <div style="font-size:11px;opacity:0.7;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Overall (${filtered.length} games, ${totalBets} bets)</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:14px;">
+                    <div>
+                        <div style="font-size:10px;opacity:0.7;text-transform:uppercase;">Record</div>
+                        <div style="font-size:24px;font-weight:700;margin-top:2px;">${totalWins}-${totalBets-totalWins}</div>
+                        <div style="font-size:11px;opacity:0.8;margin-top:2px;">${totalBets > 0 ? ((totalWins/totalBets)*100).toFixed(0) : 0}%</div>
+                    </div>
+                    <div>
+                        <div style="font-size:10px;opacity:0.7;text-transform:uppercase;">Profit</div>
+                        <div style="font-size:24px;font-weight:700;margin-top:2px;color:${totalProfit >= 0 ? '#86efac' : '#fca5a5'};">${totalProfit >= 0 ? '+' : ''}$${Math.round(totalProfit)}</div>
+                        <div style="font-size:11px;opacity:0.8;margin-top:2px;">$100 units</div>
+                    </div>
+                    <div>
+                        <div style="font-size:10px;opacity:0.7;text-transform:uppercase;">ROI</div>
+                        <div style="font-size:24px;font-weight:700;margin-top:2px;">${totalBets > 0 ? ((totalProfit/(totalBets*100))*100).toFixed(0) : 0}%</div>
+                        <div style="font-size:11px;opacity:0.8;margin-top:2px;">Combined</div>
+                    </div>
+                </div>
+                <div style="border-top:1px solid rgba(255,255,255,0.2);padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div>
+                        <div style="font-size:10px;opacity:0.7;text-transform:uppercase;">Spread</div>
+                        <div style="font-size:18px;font-weight:700;margin-top:2px;">${spreadWins}-${spreadTotal-spreadWins}</div>
+                        <div style="font-size:11px;opacity:0.8;">${spreadWinPct}% • ${spreadROI}% ROI</div>
+                    </div>
+                    <div>
+                        <div style="font-size:10px;opacity:0.7;text-transform:uppercase;">Moneyline</div>
+                        <div style="font-size:18px;font-weight:700;margin-top:2px;">${mlWins}-${mlTotal-mlWins}</div>
+                        <div style="font-size:11px;opacity:0.8;">${mlWinPct}% • ${mlROI}% ROI</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Score range breakdown
+        const ranges = { '50+': [], '40-50': [], '30-40': [], '20-30': [], '0-20': [] };
+        filtered.forEach(r => {
+            const s = r.fitScore;
+            if (s >= 50) ranges['50+'].push(r);
+            else if (s >= 40) ranges['40-50'].push(r);
+            else if (s >= 30) ranges['30-40'].push(r);
+            else if (s >= 20) ranges['20-30'].push(r);
+            else ranges['0-20'].push(r);
+        });
+
+        html += '<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">By Score Range</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">';
+        
+        Object.entries(ranges).forEach(([range, arr]) => {
+            if (arr.length === 0) {
+                html += `<div style="background:#f7f7f7;border-radius:10px;padding:10px;text-align:center;opacity:0.4;border:1px solid #eee;"><div style="font-size:10px;font-weight:700;color:#999;">${range}</div><div style="font-size:16px;color:#ccc;margin-top:2px;">—</div></div>`;
+                return;
+            }
+            let w = 0, total = 0;
+            arr.forEach(r => {
+                if (r.recommendation === 'SPREAD' || r.recommendation === 'BOTH') {
+                    total++; if (r.spreadResult === 'WIN') w++;
+                }
+                if (r.recommendation === 'ML' || r.recommendation === 'BOTH') {
+                    total++; if (r.mlResult === 'WIN') w++;
+                }
+            });
+            const winPct = total > 0 ? ((w/total)*100).toFixed(0) : 0;
+            const bgColor = range === '50+' ? '#f0fdf4' : range === '40-50' ? '#fefce8' : '#f7f7f7';
+            const borderColor = range === '50+' ? '#bbf7d0' : range === '40-50' ? '#fde68a' : '#eee';
+            html += `<div style="background:${bgColor};border-radius:10px;padding:10px;text-align:center;border:1px solid ${borderColor};"><div style="font-size:10px;font-weight:700;color:#444;">${range}</div><div style="font-size:16px;font-weight:700;margin-top:2px;color:#1a1a1a;">${w}-${total-w}</div><div style="font-size:10px;color:#888;margin-top:1px;">${winPct}%</div></div>`;
+        });
+        html += '</div></div>';
+
+        // Recent results log
+        html += '<div><div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Recent Results</div><div style="max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch;">';
+
+        const sorted = [...filtered].sort((a, b) => b.loggedAt - a.loggedAt);
+        sorted.slice(0, 30).forEach(r => {
+            const isWin = (r.recommendation === 'SPREAD' && r.spreadResult === 'WIN') || 
+                         (r.recommendation === 'ML' && r.mlResult === 'WIN') ||
+                         (r.recommendation === 'BOTH' && (r.spreadResult === 'WIN' || r.mlResult === 'WIN'));
+            const borderColor = isWin ? '#16a34a' : '#dc2626';
+            html += `
+                <div style="background:#fff;border-radius:10px;padding:10px;margin-bottom:6px;border-left:3px solid ${borderColor};">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div style="flex:1;">
+                            <div style="font-size:13px;font-weight:700;color:#1a1a1a;">${r.team} <span style="color:#888;">${r.teamScore}-${r.oppScore}</span> ${r.opponent}</div>
+                            <div style="font-size:11px;color:#666;margin-top:3px;">${r.spread > 0 ? '+' : ''}${r.spread} spread • ML ${r.moneyline > 0 ? '+' : ''}${r.moneyline} • Fit ${r.fitScore}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:10px;color:#999;margin-bottom:4px;">${new Date(r.loggedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                            <div style="display:flex;gap:3px;justify-content:flex-end;">
+                                ${(r.recommendation === 'SPREAD' || r.recommendation === 'BOTH') ? 
+                                    `<span style="font-size:9px;padding:2px 5px;border-radius:4px;background:${r.spreadResult === 'WIN' ? '#dcfce7' : '#fee2e2'};color:${r.spreadResult === 'WIN' ? '#16a34a' : '#dc2626'};font-weight:700;">ATS</span>` : ''}
+                                ${(r.recommendation === 'ML' || r.recommendation === 'BOTH') ? 
+                                    `<span style="font-size:9px;padding:2px 5px;border-radius:4px;background:${r.mlResult === 'WIN' ? '#dcfce7' : '#fee2e2'};color:${r.mlResult === 'WIN' ? '#16a34a' : '#dc2626'};font-weight:700;">ML</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div></div>';
+        document.getElementById('performance-content').innerHTML = html;
+    }
+
+    // Render
+    function renderPerformance() {
+        const perf = calculatePerformance();
+        const c = document.getElementById('performance-dashboard');
+        if (!perf) { c.innerHTML = ''; return; }
+        const pColor = perf.totalProfit >= 0 ? '#10b981' : '#ef4444';
+        c.innerHTML = `<div class="glass-card" style="margin: 14px 16px 4px; padding: 20px; background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15));">
+            <div style="color:#e5e7eb;font-size:11px;font-weight:700;opacity:0.8;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.8px;">System Performance (Score ≥${THRESHOLD})</div>
+            <div class="perf-card-grid">
+                <div class="perf-stat"><div class="label" style="color:#9ca3af;">Spread</div><div class="value" style="color:#fff;">${perf.spreadRecord}</div><div class="sub" style="color:#d1d5db;">${perf.spreadWinPct}% · ${perf.spreadROI}% ROI</div></div>
+                <div class="perf-stat"><div class="label" style="color:#9ca3af;">Moneyline</div><div class="value" style="color:#fff;">${perf.mlRecord}</div><div class="sub" style="color:#d1d5db;">${perf.mlWinPct}% · ${perf.mlROI}% ROI</div></div>
+                <div class="perf-stat"><div class="label" style="color:#9ca3af;">Profit</div><div class="value" style="color:${pColor};">${perf.totalProfit >= 0 ? '+' : ''}$${perf.totalProfit.toFixed(0)}</div><div class="sub" style="color:#d1d5db;">$100 units</div></div>
+                <div class="perf-stat"><div class="label" style="color:#9ca3af;">Games</div><div class="value" style="color:#fff;">${perf.totalGames}</div><div class="sub" style="color:#d1d5db;">Qualified</div></div>
+            </div>
+        </div>`;
+    }
+    }
+
+    function renderGamesList() {
+        const c = document.getElementById('games-list');
+        const sorted = [...games].sort((a, b) => calculateFitScore(b).score - calculateFitScore(a).score);
+
+        // Update "last updated" timestamp
+        if (sorted.length > 0) {
+            const mostRecent = Math.max(...sorted.map(g => g.addedAt || 0));
+            if (mostRecent > 0) {
+                const d = new Date(mostRecent);
+                document.getElementById('last-updated-text').textContent = 'Last updated: ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            }
+        }
+
+        if (sorted.length === 0) {
+            c.innerHTML = '<div class="glass-card" style="padding:60px 24px;text-align:center;margin-top:8px;"><div style="font-size:48px;margin-bottom:14px;filter:grayscale(0.3);">🏀</div><div style="color:#9ca3af;font-size:15px;font-weight:500;">No games yet. Import from SBD above!</div></div>';
+            return;
+        }
+
+        c.innerHTML = sorted.map((game, idx) => {
+            const a = calculateFitScore(game);
+            const tier = a.score >= 50 ? 'strong' : a.score >= 25 ? 'medium' : 'weak';
+            const scoreColorClass = a.score >= 50 ? 'strong' : a.score >= 25 ? 'medium' : '';
+            let html = `<div class="game-card ${tier}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                    <div>
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+                            <span style="font-size:12px;font-weight:700;color:#6b7280;background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:6px;">#${idx+1}</span>
+                            <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;">${game.team}</span>
+                            ${a.bothPositive ? '<span class="badge">⭐ ALIGNED</span>' : ''}
+                        </div>
+                        <div style="font-size:13px;color:#9ca3af;font-weight:500;">
+                            ${game.spread > 0 ? '+' : ''}${game.spread} vs ${game.opponent} &nbsp;|&nbsp; ML ${game.moneyline > 0 ? '+' : ''}${game.moneyline}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="score-num ${scoreColorClass}">${a.score}</div>
+                        <div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;font-weight:700;">Fit Score</div>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                    <div class="stat-box">
+                        <div class="label">Spread ${a.recommendation === 'SPREAD' || a.recommendation === 'BOTH' ? '✅' : ''}</div>
+                        <div class="value" style="margin-top:6px;margin-bottom:4px;">Expected: ${a.spreadBaseline}%</div>
+                        <div class="value">Actual: ${game.spreadMoneyPct}%</div>
+                        <div class="value ${a.spreadGap > 0 ? 'gap-positive' : 'gap-negative'}" style="margin-top:6px;font-size:16px;">Gap: ${a.spreadGap > 0 ? '+' : ''}${a.spreadGap}%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">Moneyline ${a.recommendation === 'ML' || a.recommendation === 'BOTH' ? '✅' : ''}</div>
+                        <div class="value" style="margin-top:6px;margin-bottom:4px;">Expected: ${a.mlBaseline}%</div>
+                        <div class="value">Actual: ${game.mlMoneyPct}%</div>
+                        <div class="value ${a.mlGap > 0 ? 'gap-positive' : 'gap-negative'}" style="margin-top:6px;font-size:16px;">Gap: ${a.mlGap > 0 ? '+' : ''}${a.mlGap}%</div>
+                    </div>
+                </div>`;
+            if (game.result) {
+                html += `<div style="padding-top:14px;border-top:1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:8px;">${game.team} ${game.result.teamScore} – ${game.result.oppScore} ${game.opponent}</div>
+                    <div style="display:flex;gap:8px;">
+                        <span style="font-size:12px;padding:6px 12px;border-radius:8px;background:${game.result.spreadResult === 'WIN' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${game.result.spreadResult === 'WIN' ? '#10b981' : '#ef4444'};font-weight:700;border:1px solid ${game.result.spreadResult === 'WIN' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'};">ATS: ${game.result.spreadResult}</span>
+                        <span style="font-size:12px;padding:6px 12px;border-radius:8px;background:${game.result.mlResult === 'WIN' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${game.result.mlResult === 'WIN' ? '#10b981' : '#ef4444'};font-weight:700;border:1px solid ${game.result.mlResult === 'WIN' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'};">ML: ${game.result.mlResult}</span>
+                    </div>
+                </div>`;
+            } else {
+                html += `<div style="display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1);">
+                    <button onclick="openResultModal('${game.firebaseKey}')" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(59,130,246,0.3);">Log Result</button>
+                    <button onclick="deleteGame('${game.firebaseKey}')" style="background:none;border:none;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;">Delete</button>
+                </div>`;
+            }
+            html += '</div>';
+            return html;
+        }).join('');
+    }
+
+    function render() {
+        try {
+            renderPerformance();
+            renderGamesList();
+        } catch(e) {
+            const d = document.createElement('div');
+            d.style.cssText = 'position:fixed;top:60px;left:10px;right:10px;background:red;color:white;padding:16px;border-radius:8px;z-index:9999;font-size:14px;white-space:pre-wrap;max-height:300px;overflow:auto;';
+            d.textContent = 'ERROR:\n' + e.message + '\n' + e.stack;
+            document.body.appendChild(d);
+        }
+    }
+
+    document.getElementById('bulk-date').valueAsDate = new Date();
+</script>
+</body>
+</html>
