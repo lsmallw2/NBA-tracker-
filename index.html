@@ -292,11 +292,17 @@ auth.onAuthStateChanged(user => {
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('user-info').textContent = user.email;
             
-            // Show appropriate import fields based on saved sport
+            // Update header and import fields based on saved sport
+            const headerTitle = document.querySelector('#main-app h2');
+            const headerEmoji = document.querySelector('#main-app .container span');
             if (selectedSport === 'nba') {
+                headerTitle.textContent = 'NBA EDGE';
+                headerEmoji.textContent = '🏀';
                 document.getElementById('nba-import').style.display = 'block';
                 document.getElementById('mlb-import').style.display = 'none';
             } else {
+                headerTitle.textContent = 'MLB EDGE';
+                headerEmoji.textContent = '⚾';
                 document.getElementById('nba-import').style.display = 'none';
                 document.getElementById('mlb-import').style.display = 'block';
             }
@@ -317,16 +323,29 @@ function selectSport(sport) {
     document.getElementById('main-app').classList.remove('hidden');
     document.getElementById('user-info').textContent = currentUser.email;
     
-    // Show appropriate import fields
+    // Update header for selected sport
+    const headerTitle = document.querySelector('#main-app h2');
+    const headerEmoji = document.querySelector('#main-app .container span');
     if (sport === 'nba') {
+        headerTitle.textContent = 'NBA EDGE';
+        headerEmoji.textContent = '🏀';
         document.getElementById('nba-import').style.display = 'block';
         document.getElementById('mlb-import').style.display = 'none';
     } else {
+        headerTitle.textContent = 'MLB EDGE';
+        headerEmoji.textContent = '⚾';
         document.getElementById('nba-import').style.display = 'none';
         document.getElementById('mlb-import').style.display = 'block';
     }
     
     loadData();
+}
+
+function switchSport() {
+    selectedSport = null;
+    localStorage.removeItem('selectedSport');
+    document.getElementById('main-app').classList.add('hidden');
+    document.getElementById('sport-selector').classList.remove('hidden');
 }
 
 // Load data
@@ -1414,7 +1433,7 @@ function renderGames() {
                             <span style="font-size: 24px; font-weight: 900; color: white;">${game.team}</span>
                         </div>
                         <div style="color: #94a3b8; font-size: 14px; margin-bottom: 8px;">
-                            ${game.spread > 0 ? '+' : ''}${game.spread} vs ${game.opponent} • ML ${game.moneyline > 0 ? '+' : ''}${game.moneyline}
+                            ${game.sport === 'mlb' ? '' : `${game.spread > 0 ? '+' : ''}${game.spread} vs ${game.opponent} • `}ML ${game.moneyline > 0 ? '+' : ''}${game.moneyline}
                         </div>
                         ${analysis.aligned ? '<span style="background: linear-gradient(135deg, #10b981, #34d399); color: white; padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block;">⭐ ALIGNED</span>' : ''}
                     </div>
@@ -1423,7 +1442,8 @@ function renderGames() {
                         <div style="font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">FIT</div>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: ${game.sport === 'mlb' ? '1fr' : '1fr 1fr'}; gap: 12px; margin-bottom: 16px;">
+                    ${game.sport === 'mlb' ? '' : `
                     <div class="stat-box">
                         <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">SPREAD ${analysis.spreadGap > 0 ? '✅' : ''}</div>
                         <div style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">Expected: <span style="color: white; font-weight: 600;">50%</span></div>
@@ -1432,9 +1452,10 @@ function renderGames() {
                             Gap: ${analysis.spreadGap > 0 ? '+' : ''}${analysis.spreadGap}%
                         </div>
                     </div>
+                    `}
                     <div class="stat-box">
                         <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">MONEYLINE ${analysis.mlGap > 0 ? '✅' : ''}</div>
-                        <div style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">Expected: <span style="color: white; font-weight: 600;">${calcMLBaseline(game.spread).toFixed(1)}%</span></div>
+                        <div style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">Expected: <span style="color: white; font-weight: 600;">${calcMLBaseline(game.moneyline).toFixed(1)}%</span></div>
                         <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;">Actual: <span style="color: white; font-weight: 600;">${mlPct}%</span></div>
                         <div style="font-size: 15px; font-weight: 700; color: ${analysis.mlGap > 0 ? '#10b981' : '#ef4444'};">
                             Gap: ${analysis.mlGap > 0 ? '+' : ''}${analysis.mlGap}%
