@@ -123,6 +123,7 @@
             </div>
         </div>
         <div style="display: flex; gap: 12px; align-items: center;">
+            <button onclick="switchSport()" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 8px 16px; border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">Switch Sport</button>
             <button onclick="showCalibration()" style="font-size: 22px; background: none; border: none; cursor: pointer; padding: 4px; filter: grayscale(0.3) brightness(1.2);" title="Score Calibration">📊</button>
             <button onclick="showOptimizer()" style="font-size: 22px; background: none; border: none; cursor: pointer; padding: 4px; filter: grayscale(0.3) brightness(1.2);" title="Optimize Weights">⚙️</button>
             <button onclick="showPerformance()" style="font-size: 24px; background: none; border: none; cursor: pointer; padding: 4px; filter: grayscale(0.3) brightness(1.2);">📈</button>
@@ -290,6 +291,16 @@ auth.onAuthStateChanged(user => {
             document.getElementById('sport-selector').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('user-info').textContent = user.email;
+            
+            // Show appropriate import fields based on saved sport
+            if (selectedSport === 'nba') {
+                document.getElementById('nba-import').style.display = 'block';
+                document.getElementById('mlb-import').style.display = 'none';
+            } else {
+                document.getElementById('nba-import').style.display = 'none';
+                document.getElementById('mlb-import').style.display = 'block';
+            }
+            
             loadData();
         }
     } else {
