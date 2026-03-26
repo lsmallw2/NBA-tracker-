@@ -144,7 +144,7 @@
             <textarea id="ml-data" rows="6" placeholder="Paste MONEYLINE table data here"></textarea>
         </div>
         <div id="mlb-import" style="display: none;">
-            <textarea id="ml-data" rows="6" placeholder="Paste MONEYLINE table data here"></textarea>
+            <textarea id="mlb-ml-data" rows="6" placeholder="Paste MONEYLINE table data here"></textarea>
         </div>
         <div style="display: flex; gap: 10px;">
             <button onclick="importGames()" class="btn-primary">Import Games</button>
@@ -493,7 +493,7 @@ function importNBA() {
 }
 
 function importMLB() {
-    const mlText = document.getElementById('ml-data').value;
+    const mlText = document.getElementById('mlb-ml-data').value;
     const date = document.getElementById('game-date').value;
     
     if (!mlText) {
@@ -543,7 +543,7 @@ function importMLB() {
         }
         
         Promise.all(promises).then(() => {
-            document.getElementById('ml-data').value = '';
+            document.getElementById('mlb-ml-data').value = '';
             alert('Imported ' + promises.length + ' MLB games!');
         });
     });
