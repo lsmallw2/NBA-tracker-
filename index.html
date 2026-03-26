@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -97,8 +98,8 @@
                     <span style="font-size: 20px;">🏀</span>
                 </div>
                 <div>
-                    <h2 style="font-size: 20px; font-weight: 800; color: white;">NBA EDGE <span style="font-size: 11px; background: linear-gradient(135deg, #10b981, #34d399); padding: 3px 8px; border-radius: 6px; font-weight: 700; margin-left: 8px;">V2 SHARP</span></h2>
-                    <p id="user-info" style="font-size: 11px; color: #94a3b8;"><a href="index-v1-legacy.html" style="color: #60a5fa; text-decoration: none;">View V1 Legacy (50 games)</a></p>
+                    <h2 style="font-size: 20px; font-weight: 800; color: white;">NBA EDGE</h2>
+                    <p id="user-info" style="font-size: 11px; color: #94a3b8;"></p>
                 </div>
             </div>
             <div style="display: flex; gap: 12px; align-items: center;">
@@ -110,108 +111,110 @@
         </div>
     </div>
 
-    <div class="container">
-        <!-- Performance Dashboard -->
-        <div id="perf-dash"></div>
+```
+<div class="container">
+    <!-- Performance Dashboard -->
+    <div id="perf-dash"></div>
 
-        <!-- Import Section -->
-        <div class="card">
-            <h3 style="margin-bottom: 16px; color: white; font-size: 18px; font-weight: 700;">Import from SBD (V2 Sharp)</h3>
-            <input type="date" id="game-date" style="width: auto; margin-bottom: 10px;">
-            <textarea id="spread-data" rows="6" placeholder="Paste SPREAD table data here (Bet% + Money%)"></textarea>
-            <textarea id="ml-data" rows="6" placeholder="Paste MONEYLINE table data here (Bet% + Money%)"></textarea>
-            <textarea id="opening-lines" rows="3" placeholder="OPTIONAL - Opening lines: LAL -3 -180, BOS +3 +160 (one per line for line movement bonus)"></textarea>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="importGames()" class="btn-primary">Import Games</button>
-                <button onclick="clearGames()" class="btn-danger">Clear All</button>
-            </div>
-        </div>
-
-        <!-- Games List -->
-        <div id="games-container"></div>
-    </div>
-
-    <!-- Result Modal -->
-    <div id="modal-overlay" onclick="if(event.target === this) closeModal();" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 400px;">
-            <h3 style="margin-bottom: 16px;">Log Result</h3>
-            <p id="modal-info" style="color: #666; margin-bottom: 16px;"></p>
-            <input type="number" id="team-score" placeholder="Team Score" oninput="autofillOpponent()">
-            <input type="number" id="opp-score" placeholder="Opponent Score" oninput="autofillTeam()">
-            <div style="display: flex; gap: 10px; margin-top: 16px;">
-                <button onclick="saveResult()" class="btn-primary" style="flex: 1;">Save</button>
-                <button onclick="closeModal()" style="flex: 1; background: #9ca3af; color: white;">Cancel</button>
-            </div>
+    <!-- Import Section -->
+    <div class="card">
+        <h3 style="margin-bottom: 16px; color: white; font-size: 18px; font-weight: 700;">Import from SBD</h3>
+        <input type="date" id="game-date" style="width: auto; margin-bottom: 10px;">
+        <textarea id="spread-data" rows="6" placeholder="Paste SPREAD table data here"></textarea>
+        <textarea id="ml-data" rows="6" placeholder="Paste MONEYLINE table data here"></textarea>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="importGames()" class="btn-primary">Import Games</button>
+            <button onclick="clearGames()" class="btn-danger">Clear All</button>
         </div>
     </div>
-    
-    <!-- Performance Modal -->
-    <div id="perf-modal" onclick="if(event.target === this) closePerfModal();" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000; overflow-y: auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 32px; max-width: 900px; margin: 20px auto; border: 1px solid rgba(148, 163, 184, 0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="font-size: 28px; font-weight: 900; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">📈 Performance Analytics</h3>
-                <button onclick="closePerfModal()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 36px; height: 36px; border-radius: 10px; font-size: 20px; cursor: pointer; transition: all 0.2s;">&times;</button>
-            </div>
-            
-            <!-- Filters -->
-            <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 14px; padding: 20px; margin-bottom: 24px;">
-                <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">🎯 Filters</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 8px; font-weight: 600;">Score Range</label>
-                        <select id="perf-score-filter" onchange="showPerformance()" style="width: 100%; padding: 12px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 10px; background: rgba(15, 23, 42, 0.8); color: white; font-size: 14px; font-weight: 500;">
-                            <option value=">0">Any Edge (>0)</option>
-                            <option value="10+">10+</option>
-                            <option value="20+">20+</option>
-                            <option value="30+">30+</option>
-                            <option value="40+">40+</option>
-                            <option value="50+">50+</option>
-                            <option value="0-10">0-10</option>
-                            <option value="10-20">10-20</option>
-                            <option value="20-30">20-30</option>
-                            <option value="30-40">30-40</option>
-                            <option value="40-50">40-50</option>
-                            <option value="50+range">50+</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 8px; font-weight: 600;">Time Period</label>
-                        <select id="perf-date-filter" onchange="showPerformance()" style="width: 100%; padding: 12px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 10px; background: rgba(15, 23, 42, 0.8); color: white; font-size: 14px; font-weight: 500;">
-                            <option value="all">All Time</option>
-                            <option value="today">Today</option>
-                            <option value="yesterday">Yesterday</option>
-                            <option value="3">Last 3 Days</option>
-                            <option value="5">Last 5 Days</option>
-                        </select>
-                    </div>
+
+    <!-- Games List -->
+    <div id="games-container"></div>
+</div>
+
+<!-- Result Modal -->
+<div id="modal-overlay" onclick="if(event.target === this) closeModal();" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 400px;">
+        <h3 style="margin-bottom: 16px;">Log Result</h3>
+        <p id="modal-info" style="color: #666; margin-bottom: 16px;"></p>
+        <input type="number" id="team-score" placeholder="Team Score" oninput="autofillOpponent()">
+        <input type="number" id="opp-score" placeholder="Opponent Score" oninput="autofillTeam()">
+        <div style="display: flex; gap: 10px; margin-top: 16px;">
+            <button onclick="saveResult()" class="btn-primary" style="flex: 1;">Save</button>
+            <button onclick="closeModal()" style="flex: 1; background: #9ca3af; color: white;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Modal -->
+<div id="perf-modal" onclick="if(event.target === this) closePerfModal();" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000; overflow-y: auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 32px; max-width: 900px; margin: 20px auto; border: 1px solid rgba(148, 163, 184, 0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="font-size: 28px; font-weight: 900; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">📈 Performance Analytics</h3>
+            <button onclick="closePerfModal()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 36px; height: 36px; border-radius: 10px; font-size: 20px; cursor: pointer; transition: all 0.2s;">&times;</button>
+        </div>
+        
+        <!-- Filters -->
+        <div style="background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+            <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">🎯 Filters</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <label style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 8px; font-weight: 600;">Score Range</label>
+                    <select id="perf-score-filter" onchange="showPerformance()" style="width: 100%; padding: 12px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 10px; background: rgba(15, 23, 42, 0.8); color: white; font-size: 14px; font-weight: 500;">
+                        <option value=">0">Any Edge (>0)</option>
+                        <option value="10+">10+</option>
+                        <option value="20+">20+</option>
+                        <option value="30+">30+</option>
+                        <option value="40+">40+</option>
+                        <option value="50+">50+</option>
+                        <option value="0-10">0-10</option>
+                        <option value="10-20">10-20</option>
+                        <option value="20-30">20-30</option>
+                        <option value="30-40">30-40</option>
+                        <option value="40-50">40-50</option>
+                        <option value="50+range">50+</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 8px; font-weight: 600;">Time Period</label>
+                    <select id="perf-date-filter" onchange="showPerformance()" style="width: 100%; padding: 12px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 10px; background: rgba(15, 23, 42, 0.8); color: white; font-size: 14px; font-weight: 500;">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="3">Last 3 Days</option>
+                        <option value="5">Last 5 Days</option>
+                    </select>
                 </div>
             </div>
-            
-            <div id="perf-modal-content"></div>
         </div>
+        
+        <div id="perf-modal-content"></div>
     </div>
-    
-    <!-- Optimizer Modal -->
-    <div id="optimizer-modal" onclick="if(event.target === this) closeOptimizer();" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1001; overflow-y: auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 32px; max-width: 900px; margin: 20px auto; border: 1px solid rgba(148, 163, 184, 0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="font-size: 28px; font-weight: 900; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚙️ Weight Optimizer</h3>
-                <button onclick="closeOptimizer()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 36px; height: 36px; border-radius: 10px; font-size: 20px; cursor: pointer;">&times;</button>
-            </div>
-            <div id="optimizer-content"></div>
+</div>
+
+<!-- Optimizer Modal -->
+<div id="optimizer-modal" onclick="if(event.target === this) closeOptimizer();" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1001; overflow-y: auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 32px; max-width: 900px; margin: 20px auto; border: 1px solid rgba(148, 163, 184, 0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="font-size: 28px; font-weight: 900; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⚙️ Weight Optimizer</h3>
+            <button onclick="closeOptimizer()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 36px; height: 36px; border-radius: 10px; font-size: 20px; cursor: pointer;">&times;</button>
         </div>
+        <div id="optimizer-content"></div>
     </div>
-    
-    <!-- Calibration Modal -->
-    <div id="calibration-modal" onclick="if(event.target === this) closeCalibration();" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1001; overflow-y: auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 32px; max-width: 1000px; margin: 20px auto; border: 1px solid rgba(148, 163, 184, 0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="font-size: 28px; font-weight: 900; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">📊 Score Calibration</h3>
-                <button onclick="closeCalibration()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 36px; height: 36px; border-radius: 10px; font-size: 20px; cursor: pointer;">&times;</button>
-            </div>
-            <div id="calibration-content"></div>
+</div>
+
+<!-- Calibration Modal -->
+<div id="calibration-modal" onclick="if(event.target === this) closeCalibration();" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1001; overflow-y: auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 32px; max-width: 1000px; margin: 20px auto; border: 1px solid rgba(148, 163, 184, 0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="font-size: 28px; font-weight: 900; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">📊 Score Calibration</h3>
+            <button onclick="closeCalibration()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 36px; height: 36px; border-radius: 10px; font-size: 20px; cursor: pointer;">&times;</button>
         </div>
+        <div id="calibration-content"></div>
     </div>
+</div>
+```
+
 </div>
 
 <script>
@@ -252,7 +255,7 @@ auth.onAuthStateChanged(user => {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
-        document.getElementById('user-info').innerHTML += ' • ' + user.email;
+        document.getElementById('user-info').textContent = user.email;
         loadData();
     } else {
         currentUser = null;
@@ -280,71 +283,42 @@ function loadData() {
     });
 }
 
-// Calculate ML baseline
-function calcMLBaseline(spread) {
-    return Math.max(5, Math.min(95, 50 + (parseFloat(spread) * -2.8)));
+// Calculate ML baseline from moneyline odds (implied probability)
+function calcMLBaseline(moneyline) {
+    if (!moneyline) return 50;
+    if (moneyline < 0) {
+        return (Math.abs(moneyline) / (Math.abs(moneyline) + 100)) * 100;
+    } else {
+        return (100 / (moneyline + 100)) * 100;
+    }
 }
 
-// Calculate fit score - V2 SHARP SYSTEM
+// Calculate fit score
 function calcFitScore(game) {
     const spreadPct = game.spreadMoneyPct || game.spreadPct || 0;
     const mlPct = game.mlMoneyPct || game.mlPct || 0;
-    const spread = game.spread || 0;
-    const spreadBetPct = game.spreadBetPct || spreadPct;
-    const mlBetPct = game.mlBetPct || mlPct;
-    const openSpread = game.openSpread || spread;
-    const openML = game.openML || game.moneyline;
+    const moneyline = game.moneyline || 0;
     
     const spreadBase = 50;
-    const mlBase = calcMLBaseline(spread);
-    const spreadGap = spreadBase - spreadPct;
-    const mlGap = mlBase - mlPct;
+    const mlBase = calcMLBaseline(moneyline);
+    let spreadGap = spreadBase - spreadPct;
+    let mlGap = mlBase - mlPct;
     
-    const spreadSharpGap = spreadPct - spreadBetPct;
-    const mlSharpGap = mlPct - mlBetPct;
+    if (currentWeights.invert) {
+        spreadGap = -spreadGap;
+        mlGap = -mlGap;
+    }
     
-    const spreadMove = spread - openSpread;
-    const mlMove = (game.moneyline || 0) - openML;
-    
-    const onContrarian = spreadGap > 0;
-    const sharpMoneyAgrees = onContrarian ? spreadSharpGap > 5 : spreadSharpGap < -5;
-    const sharpLineAgrees = onContrarian ? 
-        (spreadGap > 0 && spreadMove > 0) || (spreadGap < 0 && spreadMove < 0) :
-        (spreadGap > 0 && spreadMove < 0) || (spreadGap < 0 && spreadMove > 0);
-    const sharpFullyAligned = sharpMoneyAgrees && sharpLineAgrees;
-    
-    let sharpScore = 0;
-    const absSharpGap = Math.abs(spreadSharpGap);
-    if (absSharpGap >= 20) sharpScore += 20;
-    else if (absSharpGap >= 15) sharpScore += 15;
-    else if (absSharpGap >= 10) sharpScore += 10;
-    else if (absSharpGap >= 5) sharpScore += 5;
-    
-    const absSpreadMove = Math.abs(spreadMove);
-    if (absSpreadMove >= 2.5) sharpScore += 20;
-    else if (absSpreadMove >= 2) sharpScore += 15;
-    else if (absSpreadMove >= 1) sharpScore += 10;
-    else if (absSpreadMove >= 0.5) sharpScore += 5;
-    
-    if (sharpFullyAligned && onContrarian) sharpScore += 15;
-    if (onContrarian && sharpMoneyAgrees && !sharpLineAgrees) sharpScore -= 10;
-    if (onContrarian && !sharpMoneyAgrees && sharpLineAgrees) sharpScore -= 10;
-    if (!onContrarian && (sharpMoneyAgrees || sharpLineAgrees)) sharpScore -= 15;
-    
-    const weighted = (spreadGap * 0.70) + (mlGap * 0.30);
-    const base = weighted * 1.5;
+    const weighted = (spreadGap * currentWeights.spreadWeight) + (mlGap * currentWeights.mlWeight);
+    const base = weighted * currentWeights.multiplier;
     const aligned = spreadGap > 0 && mlGap > 0;
-    const alignBonus = aligned ? 5 : 0;
-    const sharpBonus = sharpScore;
+    const bonus = aligned ? currentWeights.alignmentBonus : 0;
     
     return {
-        score: Math.round((base + alignBonus + sharpBonus) * 10) / 10,
+        score: Math.round((base + bonus) * 10) / 10,
         spreadGap: Math.round(spreadGap * 10) / 10,
         mlGap: Math.round(mlGap * 10) / 10,
-        aligned,
-        sharpGap: Math.round(spreadSharpGap * 10) / 10,
-        sharpMove: Math.round(spreadMove * 10) / 10,
-        sharpScore: Math.round(sharpScore)
+        aligned
     };
 }
 
@@ -363,16 +337,11 @@ function parseSBD(text) {
             if (i >= lines.length) break;
             
             const lineVal = parseFloat(lines[i].replace('−', '-').replace('+', ''));
-            i++; // Bet%
+            i += 2; // skip bet%
             if (i >= lines.length) break;
             
-            const betPct = parseFloat(lines[i].replace('%', ''));
-            i++; // Money%
-            if (i >= lines.length) break;
-            
-            const moneyPct = parseFloat(lines[i].replace('%', ''));
-            
-            parsed.push({ team, line: lineVal, betPct, moneyPct });
+            const pct = parseFloat(lines[i].replace('%', ''));
+            parsed.push({ team, line: lineVal, pct });
         }
         i++;
     }
@@ -392,7 +361,6 @@ function parseSBD(text) {
 function importGames() {
     const spreadText = document.getElementById('spread-data').value;
     const mlText = document.getElementById('ml-data').value;
-    const openingText = document.getElementById('opening-lines').value;
     const date = document.getElementById('game-date').value;
     
     if (!spreadText || !mlText) {
@@ -408,20 +376,6 @@ function importGames() {
         return;
     }
     
-    // Parse opening lines (optional)
-    const openingLines = {};
-    if (openingText.trim()) {
-        openingText.split('\n').forEach(line => {
-            const match = line.trim().match(/([A-Z]{2,4})\s+([-+]?\d+\.?\d*)\s+([-+]?\d+)/);
-            if (match) {
-                openingLines[match[1]] = {
-                    spread: parseFloat(match[2]),
-                    ml: parseFloat(match[3])
-                };
-            }
-        });
-    }
-    
     // Delete existing games for this date
     const deletes = games.filter(g => g.date === date).map(g => db.ref('games/' + g.key).remove());
     
@@ -430,18 +384,13 @@ function importGames() {
         spreadData.forEach(s => {
             const m = mlData.find(x => x.team === s.team);
             if (m) {
-                const opening = openingLines[s.team] || {};
                 promises.push(db.ref('games').push({
                     team: s.team,
                     opponent: s.opp,
                     spread: s.line,
                     moneyline: m.line,
-                    spreadBetPct: s.betPct,
-                    spreadMoneyPct: s.moneyPct,
-                    mlBetPct: m.betPct,
-                    mlMoneyPct: m.moneyPct,
-                    openSpread: opening.spread || s.line,
-                    openML: opening.ml || m.line,
+                    spreadMoneyPct: s.pct,
+                    mlMoneyPct: m.pct,
                     date: date,
                     addedBy: currentUser.email,
                     addedAt: Date.now()
@@ -452,9 +401,7 @@ function importGames() {
         Promise.all(promises).then(() => {
             document.getElementById('spread-data').value = '';
             document.getElementById('ml-data').value = '';
-            document.getElementById('opening-lines').value = '';
-            const openMsg = Object.keys(openingLines).length > 0 ? ' (with opening lines)' : ' (no opening lines - using current)';
-            alert('Imported ' + promises.length + ' games' + openMsg);
+            alert('Imported ' + promises.length + ' games!');
         });
     });
 }
@@ -1315,13 +1262,7 @@ function renderGames() {
                         <div style="color: #94a3b8; font-size: 14px; margin-bottom: 8px;">
                             ${game.spread > 0 ? '+' : ''}${game.spread} vs ${game.opponent} • ML ${game.moneyline > 0 ? '+' : ''}${game.moneyline}
                         </div>
-                        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;">
-                            ${analysis.aligned ? '<span style="background: linear-gradient(135deg, #10b981, #34d399); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">⭐ ALIGNED</span>' : ''}
-                            ${analysis.sharpScore >= 30 ? '<span style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">🔥 SHARP CRUSH</span>' : ''}
-                            ${analysis.sharpScore >= 15 && analysis.sharpScore < 30 ? '<span style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">💎 SHARP ALIGNED</span>' : ''}
-                            ${analysis.sharpScore >= 5 && analysis.sharpScore < 15 ? '<span style="background: rgba(59, 130, 246, 0.3); color: #60a5fa; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid rgba(59, 130, 246, 0.5);">⚡ SHARP ACTIVE</span>' : ''}
-                            ${analysis.sharpScore < 0 ? '<span style="background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.4);">⚠️ SHARP FADE</span>' : ''}
-                        </div>
+                        ${analysis.aligned ? '<span style="background: linear-gradient(135deg, #10b981, #34d399); color: white; padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block;">⭐ ALIGNED</span>' : ''}
                     </div>
                     <div style="text-align: right;">
                         <div class="score ${scoreClass}">${analysis.score}</div>
@@ -1333,10 +1274,9 @@ function renderGames() {
                         <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">SPREAD ${analysis.spreadGap > 0 ? '✅' : ''}</div>
                         <div style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">Expected: <span style="color: white; font-weight: 600;">50%</span></div>
                         <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;">Actual: <span style="color: white; font-weight: 600;">${spreadPct}%</span></div>
-                        <div style="font-size: 15px; font-weight: 700; color: ${analysis.spreadGap > 0 ? '#10b981' : '#ef4444'}; margin-bottom: 6px;">
+                        <div style="font-size: 15px; font-weight: 700; color: ${analysis.spreadGap > 0 ? '#10b981' : '#ef4444'};">
                             Gap: ${analysis.spreadGap > 0 ? '+' : ''}${analysis.spreadGap}%
                         </div>
-                        ${game.spreadBetPct ? `<div style="font-size: 11px; color: #94a3b8; padding-top: 6px; border-top: 1px solid rgba(148, 163, 184, 0.1);">Sharp Gap: ${analysis.sharpGap > 0 ? '+' : ''}${analysis.sharpGap}%${analysis.sharpMove ? ` • Move: ${analysis.sharpMove > 0 ? '+' : ''}${analysis.sharpMove}` : ''}</div>` : ''}
                     </div>
                     <div class="stat-box">
                         <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">MONEYLINE ${analysis.mlGap > 0 ? '✅' : ''}</div>
