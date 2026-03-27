@@ -149,7 +149,8 @@
         </div>
         <div style="display: flex; gap: 10px;">
             <button onclick="importGames()" class="btn-primary">Import Games</button>
-            <button onclick="clearGames()" class="btn-danger">Clear All</button>
+            <button onclick="clearGames()" class="btn-danger">Clear All Games</button>
+            <button onclick="clearResults()" class="btn-danger">Clear All Results</button>
         </div>
     </div>
 
@@ -583,6 +584,18 @@ function importMLB() {
 function clearGames() {
     if (confirm('Clear all games? Results will be kept.')) {
         db.ref('games').remove();
+    }
+}
+
+function clearResults() {
+    if (confirm('Clear ALL results? This cannot be undone!')) {
+        db.ref('results').remove();
+    }
+}
+
+function deleteResult(resultKey) {
+    if (confirm('Delete this result?')) {
+        db.ref('results/' + resultKey).remove();
     }
 }
 
@@ -1465,9 +1478,12 @@ function renderGames() {
                 </div>
                 ${game.result ? `
                     <div style="padding-top: 16px; border-top: 1px solid rgba(148, 163, 184, 0.15);">
-                        <div style="font-weight: 700; margin-bottom: 10px; color: white; font-size: 15px;">${game.team} ${game.result.teamScore}-${game.result.oppScore} ${game.opponent}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: 700; color: white; font-size: 15px;">${game.team} ${game.result.teamScore}-${game.result.oppScore} ${game.opponent}</div>
+                            <button onclick="deleteGameResult('${game.key}')" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer;">Delete</button>
+                        </div>
                         <div style="display: flex; gap: 8px;">
-                            <span style="background: ${game.result.spreadResult === 'WIN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${game.result.spreadResult === 'WIN' ? '#10b981' : '#ef4444'}; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; border: 1px solid ${game.result.spreadResult === 'WIN' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};">ATS: ${game.result.spreadResult}</span>
+                            ${game.sport === 'mlb' ? '' : `<span style="background: ${game.result.spreadResult === 'WIN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${game.result.spreadResult === 'WIN' ? '#10b981' : '#ef4444'}; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; border: 1px solid ${game.result.spreadResult === 'WIN' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};">ATS: ${game.result.spreadResult}</span>`}
                             <span style="background: ${game.result.mlResult === 'WIN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${game.result.mlResult === 'WIN' ? '#10b981' : '#ef4444'}; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; border: 1px solid ${game.result.mlResult === 'WIN' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};">ML: ${game.result.mlResult}</span>
                         </div>
                     </div>
