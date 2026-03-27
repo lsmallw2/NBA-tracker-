@@ -1253,6 +1253,7 @@ function saveResult() {
     const analysis = calcFitScore(game);
     
     const resultData = {
+        sport: game.sport || 'nba',
         team: game.team,
         opponent: game.opponent,
         date: game.date,
@@ -1263,7 +1264,7 @@ function saveResult() {
         teamScore: ts,
         oppScore: os,
         margin: margin,
-        spreadResult: (margin + game.spread > 0) ? 'WIN' : 'LOSS',
+        spreadResult: game.spread ? ((margin + game.spread > 0) ? 'WIN' : 'LOSS') : null,
         mlResult: margin > 0 ? 'WIN' : 'LOSS',
         fitScore: analysis.score,
         spreadGap: analysis.spreadGap,
