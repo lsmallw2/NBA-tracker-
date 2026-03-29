@@ -599,6 +599,26 @@ function deleteResult(resultKey) {
     }
 }
 
+function deleteGameResult(gameKey) {
+    if (confirm('Delete this result?')) {
+        const game = games.find(g => g.key === gameKey);
+        if (game) {
+            // Remove result from game
+            db.ref('games/' + gameKey + '/result').remove();
+            
+            // Find and delete from results collection
+            const result = results.find(r => 
+                r.team === game.team && 
+                r.opponent === game.opponent && 
+                r.date === game.date
+            );
+            if (result) {
+                db.ref('results/' + result.key).remove();
+            }
+        }
+    }
+}
+
 // Open modal
 function openModal(key) {
     currentGameKey = key;
